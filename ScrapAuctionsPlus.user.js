@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ScrapAuction+
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
-// @version      2.0.1-b1
+// @version      2.0.2-b1
 // @description  it adds cool buttons
 // @author       eeek
 // @match        https://scrap.tf/auctions*
@@ -688,7 +688,8 @@ class ItemsUIController {
 
         $label.innerText = defaultLabel(name);
 
-        $label.for = `scrap-plus-${name.replace(/\s+/g, '-')}`;
+        $label.setAttribute('for', `scrap-plus-${name.replace(/\s+/g, '-')}`);
+
 
         $label.style = 'line-height: 1';
 
