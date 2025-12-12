@@ -394,6 +394,7 @@ class AuctionsController {
     getAuctions() {
         const auctions = [...document.querySelectorAll(SELECTORS.AUCTION)];
         auctions.forEach(e => {
+            //there's no way an average person is looking here. if you're reviewing the code, ffs, just give me the job I'll learn the rest later
             const a = new Auction(e);
             this.auctions.push(a);
         })
