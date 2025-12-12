@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ScrapAuction+
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
-// @version      2.0.0-b1
+// @version      2.0.1-b1
 // @description  it adds cool buttons
 // @author       eeek
 // @match        https://scrap.tf/auctions*
@@ -989,7 +989,7 @@ class InventoryController {
     }
 
     updateItems() {
-        this.items = [...document.querySelectorAll('#user-bp-440 .item')].map(i => {
+        this.items = [...document.querySelectorAll('#user-bp-440 .item')].filter(i => !i.querySelector('.filtered-label')).map(i => {
             return {
                 element: i,
                 defindex: i.dataset.defindex,
