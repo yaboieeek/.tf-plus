@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ScrapAuction+
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
-// @version      2.0.2-b1
+// @version      2.0.3-b1
 // @description  it adds cool buttons
 // @author       eeek
 // @match        https://scrap.tf/auctions*
@@ -1128,7 +1128,7 @@ class MetalConverter {
 
 class App {
     init() {
-        if(window.location.href.match(/\/auctions(?:\/(\d+))?$/)) {
+        if(window.location.href.match(/\/auctions(?:\/(\d+)|\/)?$/)) {
             this.initAuctionsPage();
         } else {
             this.initSpecificAuctionView();
