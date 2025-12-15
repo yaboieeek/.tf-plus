@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         bptf button on stn!
+// @name         STNPlus
 // @version      2.4.0
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
 // @description  makes stn a lil better
