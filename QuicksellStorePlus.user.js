@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         QSStoreClickableUnusuals 
+// @name         QuicksellStorePlus
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
 // @version      1.0.0
 // @description  makes unusual items clickable for further redirection to it's backpack.tf page
