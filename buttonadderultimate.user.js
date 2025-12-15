@@ -1,18 +1,21 @@
 // ==UserScript==
 // @name         bptf button on stn!
-// @version      2.3.2
+// @version      2.4.0
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
 // @description  makes stn a lil better
 // @author       eeek
 // @match        https://stntrading.eu/item/tf2/Unusual+*
+// @match        https://stntrading.eu/buy/unusuals/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=stntrading.eu
 // @downloadURL https://github.com/yaboieeek/BPTF-button-on-different-sites/raw/refs/heads/main/buttonadderultimate.user.js
 // @updateURL https://github.com/yaboieeek/BPTF-button-on-different-sites/raw/refs/heads/main/buttonadderultimate.user.js
 // @connect backpack.tf
 // @connect pricedb.io
+// @connect autobot.tf
 // @grant GM_setValue
 // @grant GM_getValue
 // @grant GM_xmlhttpRequest
+// @grant GM_registerMenuCommand
 // @grant GM_addStyle
 // ==/UserScript==
 
@@ -635,14 +638,310 @@ class BOCalc {
     }
 }
 
-class BOController {
-    stability = 0;
+
+/////////////////CONST////////////////////////////////////////
+const CONFIG = {
+    SCHEMA_TIMEOUT: 30 * 1000,
 }
 
+const SELECTORS = {
+    INVENTORY_BOX: '.tf2InventoryBox',
+    LOADER: '.tf2InventoryBox h1',
+    ITEM: '.inventoryItem'
+}
 
-new KeyPriceController();
-const cache = new ListingsDataCache();
-new ListingManager(cache)
+const schemaURL = `https://schema.autobot.tf/schema`;
+
+
+const LINKS = {
+    UNU_MP: (item_defindex, priceindex) => item_defindex ? `https://marketplace.tf/items/tf2/${item_defindex};5;u${priceindex}` : null,
+    UNU_BP: (itemname, priceindex) => `https://backpack.tf/stats/Unusual/${encodeURIComponent(itemname)}/Tradable/Craftable/${priceindex}`
+}
+
+//////////////////////////////////////////////////////////////
+class EventBus {
+    constructor() {
+        this.subscribers = [];
+    }
+
+    emit(event, data) {
+        for (const subscriber of this.subscribers) this.notify(event, data, subscriber);
+    }
+
+    notify(event, data, subscriber) {
+        subscriber.on(event, data);
+    }
+
+    subscribe(instance) {
+        if (typeof instance.on !== 'function') throw (`${instance.constructor.name} has no 'on' method...`);
+        this.subscribers.push(instance);
+    }
+}
+
+class Subscriber {
+    on(event, data) {
+        throw `[${this.constructor.name}] Method 'on' must be implemented`;
+    }
+}
+
+/////////////////////////////////////////////////////////////
+class Logger extends Subscriber {
+    on(event, data) {
+        console.log(`[LOG] ${event} | ${data}`);
+    }
+}
+
+class SchemaController {
+    constructor(events, schemaUrl = schemaURL) {
+        this.url = schemaUrl;
+        this.events = events;
+        this.schema = GM_getValue('SCHEMA') || [];
+        this.items = new Map();
+        this.effects = new Map();
+    }
+
+    async init() {
+        this.events.emit('schema_controller', 'initializing...');
+        if (this.schema.length === 0) {
+            this.events.emit('schema_controller', 'schema is blank...');
+            try {
+                this.schema = await this.fetchSchema();
+                this.updateCache();
+            } catch (e) {
+                this.events.emit('schema_controller', 'ERROR: ' + e)
+            }
+        };
+        this.storeData();
+    }
+
+    async fetchSchema() {
+        this.events.emit('schema_controller', 'trying to fetch...')
+        return new Promise((resolve, reject) => {
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: this.url,
+                responseType: 'json',
+                timeout: CONFIG.SCHEMA_TIMEOUT,
+
+                onload: (res) => {
+                    this.events.emit('schema_controller', 'received a response...');
+                    if (res.status !== 200) reject(`Status: ${res.status} | ${res.statusText}`)
+                    resolve(res.response)
+                },
+                onerror: (err) => reject(err),
+                ontimeout: () => reject(`Schema request timed out after ${CONFIG.SCHEMA_TIMEOUT / 1000} seconds. Try again later`)
+            })
+        })
+    }
+
+    storeData() {
+        this.storeItems();
+        this.storeEffects();
+    }
+
+    storeItems() {
+        const items = this.schema.raw.schema.items;
+        for (const id in items) {
+            this.items.set(items[id].item_name, items[id].defindex);
+        }
+        this.events.emit('schema_controller', `initialized ${this.items.size} items information...`);
+
+    }
+
+    storeEffects() {
+        for (const effect of this.schema.raw.schema.attribute_controlled_attached_particles) {
+            this.effects.set(effect.id, effect.name)
+        }
+        this.events.emit('schema_controller', `initialized ${this.effects.size} effects information...`);
+
+    }
+
+    updateCache() {
+        GM_setValue('SCHEMA', this.schema);
+    }
+
+    async forceSchemaUpdate() {
+        try {
+            this.schema = await this.fetchSchema();
+            this.storeData();
+            this.updateCache();
+        } catch (e){
+            throw e
+        }
+    }
+}
+
+class Item {
+    constructor(e) {
+        this.e = e;
+        this.fromElement();
+    }
+
+    fromElement() {
+        this.name = this.e.getAttribute('name');
+
+        this.fullname = this.e.getAttribute('itemname');
+        this.effect = {
+            priceIndex: +this.getPriceIndex(),
+            name: this.fullname
+            .replace(`Unusual` , ``)
+            .replace(this.name, ``)
+            .trim()
+        }
+    }
+
+    getPriceIndex() {
+        const match = this.e.querySelector('.particle-bg').src.match(/particles\/([^@]+)/);
+        if (!match) return null;
+        return match[1];
+    }
+}
+
+class ItemsController {
+    constructor(events, schemaController) {
+        this.items = [];
+        this.events = events;
+        this.schemaController = schemaController;
+    }
+
+    addItem(item) {
+        let defindex = this.schemaController.items.get(item.name);
+        if (defindex === undefined && item.name.toLowerCase().includes('taunt')) {
+            const oldStyleName = this.convertToOldTauntName(item.name);
+            defindex = this.schemaController.items.get(oldStyleName);
+        }
+        this.items.push({defindex, ...item});
+    }
+
+    convertToOldTauntName(tauntname) {
+        this.events.emit('items_controller', `triggered a taunt name conversion for ${tauntname}`)
+        return tauntname.replace('Taunt: ', '') + ' Taunt';
+    }
+
+}
+
+class ItemUI {
+    constructor(item) {
+        this.item = item;
+        this.imgElement = item.e.querySelector('.itemImg');
+    }
+
+    __() {
+        const element = this.imgElement;
+        const oldHTML = element.dataset.bsOriginalTitle;
+
+        const template = document.createElement('template');
+        template.innerHTML = oldHTML;
+
+        const doc = template.content;
+        const inspectBtn = doc.querySelector('a[href^="steam://"]');
+        const reqRepBtn = doc.querySelector('a[href*="repricing"]');
+
+        if (!inspectBtn || !reqRepBtn) return;
+
+        reqRepBtn.textContent = 'Backpack';
+        inspectBtn.textContent = 'Marketplace';
+
+        const mpLink = LINKS.UNU_MP(this.item.defindex, this.item.effect.priceIndex);
+        inspectBtn.href = mpLink;
+        reqRepBtn.href = LINKS.UNU_BP(this.item.name, this.item.effect.priceIndex);
+
+        inspectBtn.target = '_blank';
+        reqRepBtn.target = '_blank';
+
+        if (!mpLink) {
+            inspectBtn.disabled = true;
+            inspectBtn.classList.add('disabled');
+            inspectBtn.title = 'This item has broken defindex';
+        }
+
+        element.dataset.bsOriginalTitle = template.innerHTML;
+
+    }
+}
+/////////////////////UTILS//////////////////////////////////////////////////
+async function checkForLoad() {
+    return new Promise((resolve, reject) => {
+        const interval = setInterval(check, 300);
+        function check() {
+            const isActiveLoader = document.querySelector(SELECTORS.LOADER).innerText.includes('Loading');
+            if (isActiveLoader) return;
+            clearInterval(interval);
+            console.log('Page is ready');
+            resolve();
+        }
+    })
+}
+
+class App {
+    async init() {
+        if (window.location.href.match(/buy\/unusuals\/[\d+]/)) {
+            await this.initBotPage();
+            return;
+        }
+
+        this.initItemPage();
+    }
+
+    initItemPage() {
+        new KeyPriceController();
+        const cache = new ListingsDataCache();
+        new ListingManager(cache)
+    }
+
+    async initBotPage() {
+        this.initLogger();
+        await this.initSchema();
+        this.registerForceSchemaUpdateCommand()
+        await checkForLoad();
+        this.initItems();
+    }
+
+    initLogger() {
+        this.events = new EventBus();
+        const logger = new Logger(this.events);
+        this.events.subscribe(logger);
+    }
+
+    async initSchema() {
+        this.schemaController = new SchemaController(this.events);
+        await this.schemaController.init()
+    }
+
+    initItems() {
+        const itemsController = new ItemsController(this.events, this.schemaController);
+        const itemsCollection = document.querySelectorAll('.inventoryItem');
+        this.events.emit('initialization', `Found ${itemsCollection.length || 0} items on the page`);
+        for (const i of itemsCollection) {
+            const item = new Item(i);
+            itemsController.addItem(item);
+        }
+
+        for (const i of itemsController.items) {
+            new ItemUI(i).__();
+        }
+
+    }
+
+    registerForceSchemaUpdateCommand() {
+        const updateSchema = async () => {
+            try {
+                await this.schemaController.forceSchemaUpdate();
+                alert('Schema was updated successfully!');
+                window.location.reload();
+            } catch (e) {
+                this.events.emit('schema_updater', 'FAILED TO UPDATE SCHEMA: ' + e);
+                alert(`Failed to update schema. More info in console.`)
+            }
+        };
+
+        GM_registerMenuCommand('Update game schema via autobot', updateSchema);
+    }
+
+}
+let app = new App();
+await app.init();
+
 
 GM_addStyle(`
     .buttons-container {
