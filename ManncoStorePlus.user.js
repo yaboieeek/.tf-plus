@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         ManncoStore+ 
+// @name         ManncoStore+
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
-// @version      2.0.0
+// @version      2.0.1
 // @description  Adds backpack.tf stat page button for unusuals | Replaces sc links with bptf history
 // @author       eeek
 // @match       https://mannco.store/item/440-*
@@ -47,7 +47,6 @@ class Item {
 
 
         const match = steamCollectorLink.match(/asset\/(\d+)/);
-        console.log(steamCollectorLink)
         if (!match) return null;
         return match[1]
     }
@@ -79,7 +78,6 @@ class ItemsController {
     }
 
     getEffect(string) {
-        console.log(string)
         const match = string.match(/effects\/webp\/([^_]+)/);
         if (!match) return null;
         return match[1];
@@ -126,7 +124,8 @@ async function pageLoad() {
         const Interval = setInterval(checker, 300);
         function checker() {
             const loadSpinner = document.querySelector(SELECTORS.LOAD_SPINNER);
-            if (!!loadSpinner) return;
+            console.log('nope');
+            if (loadSpinner) return console.log(loadSpinner);
             clearInterval(Interval);
             console.log(`Page loaded successfully`);
             resolve()
@@ -135,12 +134,12 @@ async function pageLoad() {
 }
 
 const controller = new ItemsController();
-if (!!controller.itemInfo.effect) {
+if (!!controller.itemInfo.priceIndex) {
     await pageLoad();
     for (const e of document.querySelectorAll(SELECTORS.ITEM_TABLE_ROW)) {
         const item = new Item(e);
         const ui = new ItemUI(item);
-    
+
         controller.addItem(item);
         ui.updateLinks()
     }
