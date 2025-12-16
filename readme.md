@@ -56,7 +56,13 @@ Script for [STNTradingEU](https://stntrading.eu/)
   * Backpack.tf link for each item
   * Marketplace.tf link for each item
   * Force schema update feature for keeping the game schema relevant
-    
+
+### Screenshots
+<div style="display:inline">
+  <img height="350" alt="Specific item page" src="./assets/STNPlus/item_page.png" />
+  <img height="300"  alt="Bot page" src="./assets/STNPlus/bot_page.png" />  
+</div>
+
 ## ScrapAuctions+
 Script for [ScrapTF Auctions](https://scrap.tf/auctions)
 </br>
@@ -66,16 +72,23 @@ Script for [ScrapTF Auctions](https://scrap.tf/auctions)
 ### Features: 
 * **Auctions page**:
   * Blocklist - block users and hide their auctions
-  * Tooltip settings - enable or disable links in tooltips 
+  * Tooltip settings - enable or disable links in tooltips
+  * Display amount of blocked auctions in header 
 * **Certain Auction page**:
   * Automated currency selection - just type values to add and script will add currencies automatically 
-* **Both**: Modified tooltip with
+* **Both**: Modified default tooltip with
   * Backpack.tf link
   * Marketplace.tf link
   * Mannco.store link
   * Steam Community Market link
   * Item History link
-
+ 
+### Screenshots
+<div style="display:inline">
+  <img height="300" width="300"alt="Item tooltip" src="./assets/ScrapAuctionsPlus/AuctionItem.png" />
+  <img height="300" width="500"  alt="Auctions header controls" src="./assets/ScrapAuctionsPlus/AuctionsHeader.png" />  
+  <img height="300" width="800"  alt="Auction page currency adder" src="./assets/ScrapAuctionsPlus/AuctionAddCurrency.png" />  
+</div>
 
 ## ManncoStore+
 Script for [ManncoStore](https://mannco.store)
