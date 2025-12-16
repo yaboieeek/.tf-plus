@@ -6,6 +6,8 @@
 // @author       eeek
 // @match        https://quicksell.store/trade
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=quicksell.store
+// @downloadURL https://github.com/yaboieeek/.tf-plus/raw/refs/heads/main/QuicksellStorePlus.user.js
+// @updateURL  https://github.com/yaboieeek/.tf-plus/raw/refs/heads/main/QuicksellStorePlus.user.js
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
