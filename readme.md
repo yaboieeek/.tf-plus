@@ -35,6 +35,7 @@ Script for [STNTradingEU](https://stntrading.eu/)
 </br>
 [![Install STN+](https://img.shields.io/badge/Install-STN+-limegreen?style=for-the-badge)](https://github.com/yaboieeek/.tf-plus/raw/refs/heads/main/STNPlus.user.js)
 </br>
+> [!IMPORTANT]
 > Currently only works with unusuals
 ### Features: 
 * **Item page**: 
@@ -72,6 +73,7 @@ Script for [ManncoStore](https://mannco.store)
 </br>
 [![Install ManncoStore+](https://img.shields.io/badge/Install-ManncoStore+-blue?style=for-the-badge)](https://github.com/yaboieeek/.tf-plus/raw/refs/heads/main/ManncoStorePlus.user.js)
 </br>
+> [!IMPORTANT]
 > Currently only works within an unusual item page
 ### Features: 
 * Steamcollector link replaced with backpack.tf history link
@@ -82,6 +84,12 @@ Script for [QuicksellStore](https://quicksell.store/trade)
 </br>
 [![Install QuicksellStore+](https://img.shields.io/badge/Install-QuicksellStore+-darkslategrey?style=for-the-badge)](https://github.com/yaboieeek/.tf-plus/raw/refs/heads/main/QuicksellStorePlus.user.js)
 </br>
+> [!CAUTION]
 > May break due to reactive site behaviour. Use direct `/trade` site path
 ### Features: 
 * Backpack.tf stats page on control + click
+
+## Links
+|<a href='https://github.com/yaboieeek' target='_blank'><img src='./assets/eeek_pfp_github.jpg' alt='Github Profile' height='150'></a>|<a href='http://steamcommunity.com/profiles/76561198967088046' target='_blank' ><img src='./assets/eeek_pfp.jpg' alt='Github Profile' height='150'></a>|<a href='https://discord.gg/jygnfCRjna' target='_blank'><img src='./assets/pizza.jpg' alt='Discord server' height='150' width='150'></a>|
+|:--------------------------------------------------------------:|:----------------------------------------------------------:|:----------------------------------------------------------:|
+|                     **Github Profile**                       |                      **Steam Profile**                       |                      **Discord Server**                       |
