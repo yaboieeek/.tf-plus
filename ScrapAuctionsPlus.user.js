@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         ScrapAuction+
+// @name         ScrapAuctions+
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
 // @version      2.0.3-b1
 // @description  it adds cool buttons
