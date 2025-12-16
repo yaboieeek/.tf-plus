@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         STNPlus
+// @name         STN+
 // @version      2.4.0
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
 // @description  Changes unusual item page UI | Changes bot page age UI
