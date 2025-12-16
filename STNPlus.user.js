@@ -7,8 +7,8 @@
 // @match        https://stntrading.eu/item/tf2/Unusual+*
 // @match        https://stntrading.eu/buy/unusuals/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=stntrading.eu
-// @downloadURL https://github.com/yaboieeek/BPTF-button-on-different-sites/raw/refs/heads/main/buttonadderultimate.user.js
-// @updateURL https://github.com/yaboieeek/BPTF-button-on-different-sites/raw/refs/heads/main/buttonadderultimate.user.js
+// @downloadURL https://github.com/yaboieeek/.tf-plus/raw/refs/heads/main/STNPlus.user.js
+// @updateURL https://github.com/yaboieeek/.tf-plus/raw/refs/heads/main/STNPlus.user.js
 // @connect backpack.tf
 // @connect pricedb.io
 // @connect autobot.tf
