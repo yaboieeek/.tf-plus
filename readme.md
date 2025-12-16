@@ -28,7 +28,7 @@ Tech stack: </br>
   <a href="#stn"><b>STN+</b></a> •
   <a href="#scrapauctions"><b>ScrapAuctions+</b></a> •
   <a href="#manncostore"><b>ManncoStore+</b></a> •
-  <a href="#quicksellstore"><b>QuicksellStore+</b></a> •
+  <a href="#quicksellstore"><b>QuicksellStore+</b></a> 
 </p>
 
 ## Requirements
