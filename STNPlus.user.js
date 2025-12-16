@@ -2,7 +2,7 @@
 // @name         STNPlus
 // @version      2.4.0
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
-// @description  makes stn a lil better
+// @description  Changes unusual item page UI | Changes bot page age UI
 // @author       eeek
 // @match        https://stntrading.eu/item/tf2/Unusual+*
 // @match        https://stntrading.eu/buy/unusuals/*
