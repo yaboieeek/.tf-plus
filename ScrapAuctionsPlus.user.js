@@ -2,7 +2,7 @@
 // @name         ScrapAuctions+
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
 // @version      2.0.3-b1
-// @description  it adds cool buttons
+// @description  Block feature | Links in the tooltip | Currency adder for aucitons
 // @author       eeek
 // @match        https://scrap.tf/auctions*
 // @updateURL https://github.com/yaboieeek/.tf-plus/raw/refs/heads/main/ScrapAuctionsPlus.user.js
