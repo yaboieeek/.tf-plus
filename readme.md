@@ -57,7 +57,7 @@ Script for [ScrapTF Auctions](https://scrap.tf/auctions)
 * **Auctions page**:
   * Blocklist - block users and hide their auctions
   * Tooltip settings - enable or disable links in tooltips 
-* **Certain Auction page***:
+* **Certain Auction page**:
   * Automated currency selection - just type values to add and script will add currencies automatically 
 * **Both**: Modified tooltip with
   * Backpack.tf link
