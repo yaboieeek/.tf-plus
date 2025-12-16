@@ -135,7 +135,7 @@ async function pageLoad() {
 }
 
 const controller = new ItemsController();
-if (controller.itemInfo.effect) {
+if (!!controller.itemInfo.effect) {
     await pageLoad();
     for (const e of document.querySelectorAll(SELECTORS.ITEM_TABLE_ROW)) {
         const item = new Item(e);
