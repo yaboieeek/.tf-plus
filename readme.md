@@ -9,7 +9,7 @@
 
 Quality-of-Life improvements for essential Team Fortress 2 trading websites
   
-[![Discord](https://img.shields.io/badge/Stay-updated-7289da?style=for-the-badge&logo=discord)]()</br>
+[![Discord](https://img.shields.io/badge/Stay-updated-7289da?style=for-the-badge&logo=discord)](https://discord.gg/jygnfCRjna)</br>
 Tech stack: </br>
 [![JavaScript](https://img.shields.io/badge/JavaScript-grey?style=for-the-badge&logo=javascript)](https://www.javascript.com/)
 [![HTML5](https://img.shields.io/badge/HTML5-grey?style=for-the-badge&logo=HTML5)]()
