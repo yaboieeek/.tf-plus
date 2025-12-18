@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         STN+
-// @version      2.4.0
+// @version      2.4.1
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
 // @description  Changes unusual item page UI | Changes bot page age UI
 // @author       eeek
@@ -41,7 +41,7 @@ class KeyPriceController {
 
     init() {
         const lastFetched = GM_getValue('lastFetched');
-        const timeNow = Math.floor(Date.now() / 1000);
+        const timeNow = Math.floor(Date.now());
 
         const fetchInterval = Config.defaultKeyPriceFetchInterval ;
         if (lastFetched === undefined || (lastFetched + fetchInterval <= timeNow)) {
@@ -655,7 +655,7 @@ const schemaURL = `https://schema.autobot.tf/schema`;
 
 const LINKS = {
     UNU_MP: (item_defindex, priceindex) => item_defindex ? `https://marketplace.tf/items/tf2/${item_defindex};5;u${priceindex}` : null,
-    UNU_BP: (itemname, priceindex) => `https://backpack.tf/stats/Unusual/${encodeURIComponent(itemname)}/Tradable/Craftable/${priceindex}`
+    UNU_BP: (itemname, priceindex) => itemname.includes('Unusualifier') ? null : `https://backpack.tf/stats/Unusual/${encodeURIComponent(itemname)}/Tradable/Craftable/${priceindex}`
 }
 
 //////////////////////////////////////////////////////////////
@@ -791,7 +791,9 @@ class Item {
     }
 
     getPriceIndex() {
-        const match = this.e.querySelector('.particle-bg').src.match(/particles\/([^@]+)/);
+        const particle = this.e.querySelector('.particle-bg');
+        if (!particle) return null;
+        const match = particle.src.match(/particles\/([^@]+)/);
         if (!match) return null;
         return match[1];
     }
@@ -843,8 +845,9 @@ class ItemUI {
         inspectBtn.textContent = 'Marketplace';
 
         const mpLink = LINKS.UNU_MP(this.item.defindex, this.item.effect.priceIndex);
+        const bpLink = LINKS.UNU_BP(this.item.name, this.item.effect.priceIndex);
         inspectBtn.href = mpLink;
-        reqRepBtn.href = LINKS.UNU_BP(this.item.name, this.item.effect.priceIndex);
+        reqRepBtn.href = bpLink;
 
         inspectBtn.target = '_blank';
         reqRepBtn.target = '_blank';
@@ -853,6 +856,11 @@ class ItemUI {
             inspectBtn.disabled = true;
             inspectBtn.classList.add('disabled');
             inspectBtn.title = 'This item has broken defindex';
+        }
+        if (!bpLink) {
+            reqRepBtn.disabled = true;
+            reqRepBtn.classList.add('disabled');
+            reqRepBtn.title = 'This item has broken defindex';
         }
 
         element.dataset.bsOriginalTitle = template.innerHTML;
