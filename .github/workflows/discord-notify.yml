@@ -27,59 +27,48 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          # Функция для экранирования JSON
           json_escape() {
             echo "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\//\\\//g' -e 's/\n/\\n/g' -e 's/\r/\\r/g' -e 's/\t/\\t/g'
           }
           
-          # Получаем массив файлов
           FILES_LIST="${{ steps.changed-files.outputs.all_changed_files }}"
           
-          # Разбиваем строку на массив файлов
           IFS=' ' read -ra FILES_ARRAY <<< "$FILES_LIST"
           
-          # Подготавливаем данные
           REPO_NAME=$(json_escape "${{ github.repository }}")
           BRANCH_NAME=$(json_escape "${{ github.ref_name }}")
           AUTHOR_NAME=$(json_escape "${{ github.actor }}")
           
-          # Отправляем отдельное оповещение для КАЖДОГО файла
           for file_path in "${FILES_ARRAY[@]}"; do
             if [[ -n "$file_path" ]]; then
-              # Извлекаем имя файла из пути и экранируем
               FILENAME=$(json_escape "$(basename "$file_path")")
-              FILEPATH_ESCAPED=$(json_escape "$file_path")
               
-              # Формируем заголовок с именем файла
-              TITLE="Updated: $FILENAME"
+              TITLE="$FILENAME"
               
-              # Формируем описание в зависимости от типа события
               DESCRIPTION=""
               if [[ "${{ github.event_name }}" == "push" ]]; then
-                COMMIT_MSG=$(json_escape "${{ github.event.head_commit.message }}")
-                DESCRIPTION="$COMMIT_MSG"
+                FULL_COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
+                COMMIT_TITLE=$(echo "$FULL_COMMIT_MESSAGE" | head -n1)
+                COMMIT_DESCRIPTION=$(echo "$FULL_COMMIT_MESSAGE" | tail -n+2 | sed '/^$/d')
+                
+                if [[ -n "$COMMIT_DESCRIPTION" ]]; then
+                  DESCRIPTION="**$COMMIT_TITLE**\n\n$COMMIT_DESCRIPTION"
+                else
+                  DESCRIPTION="**$COMMIT_TITLE**"
+                fi
+                
                 TIMESTAMP="${{ github.event.head_commit.timestamp }}"
-              elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-                PR_TITLE=$(json_escape "${{ github.event.pull_request.title }}")
-                DESCRIPTION="PR ${{ github.event.action }}: $PR_TITLE"
-                TIMESTAMP="${{ github.event.pull_request.created_at }}"
-              elif [[ "${{ github.event_name }}" == "release" ]]; then
-                RELEASE_NAME=$(json_escape "${{ github.event.release.name }}")
-                DESCRIPTION="New release: $RELEASE_NAME"
-                TIMESTAMP="${{ github.event.release.created_at }}"
               fi
               
-              # Отправляем запрос с правильно экранированным JSON
               curl -H "Content-Type: application/json" \
                    -X POST \
                    -d "{
-                    \"content\": \"🗣 File updated in $REPO_NAME!\",
+                    \"content\": \"🗣 Update in $REPO_NAME!\",
                     \"embeds\": [{
                       \"title\": \"$TITLE\",
                       \"description\": \"$DESCRIPTION\",
-                      \"color\": 5814783,
+                      \"color\": 11403055,
                       \"fields\": [
-                        {\"name\": \"File\", \"value\": \"\`$FILEPATH_ESCAPED\`\", \"inline\": false},
                         {\"name\": \"Branch\", \"value\": \"$BRANCH_NAME\", \"inline\": true},
                         {\"name\": \"Author\", \"value\": \"$AUTHOR_NAME\", \"inline\": true}
                       ],
