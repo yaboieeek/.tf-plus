@@ -11,6 +11,7 @@
 // @updateURL  https://github.com/yaboieeek/.tf-plus/raw/refs/heads/main/ManncoStorePlus.user.js
 // @grant        GM_addStyle
 // ==/UserScript==
+//test
 const SELECTORS = {
     LOAD_SPINNER: '#transacContent .spinner-border',
     ITEM_TABLE_ROW: '.itemListPagination',
