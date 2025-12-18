@@ -12,39 +12,57 @@ jobs:
   notify-discord:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+      
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v41
         with:
           since_last_remote_commit: true
       
-      - name: Send Discord notification
+      - name: Send Discord notifications
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          TITLE="Repository Update"
-          if [[ -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
-            FILES_LIST="${{ steps.changed-files.outputs.all_changed_files }}"
-            
-            IFS=' ' read -ra FILES_ARRAY <<< "$FILES_LIST"
-            FILES_COUNT=${#FILES_ARRAY[@]}
-            
-            if [[ $FILES_COUNT -eq 1 ]]; then
-              FILENAME=$(basename "${FILES_ARRAY[0]}")
-              TITLE="$FILENAME"
-            elif [[ $FILES_COUNT -le 3 ]]; then
-              FILE_NAMES=""
-              for file in "${FILES_ARRAY[@]:0:3}"; do
-                FILE_NAMES="$FILE_NAMES$(basename "$file"), "
-              done
-              TITLE="${FILE_NAMES%, }"
-            else
-              TITLE="Updated $FILES_COUNT files"
+          FILES_LIST="${{ steps.changed-files.outputs.all_changed_files }}"
+          
+          IFS=' ' read -ra FILES_ARRAY <<< "$FILES_LIST"
+          
+          for file_path in "${FILES_ARRAY[@]}"; do
+            if [[ -n "$file_path" ]]; then
+              # Извлекаем имя файла из пути
+              FILENAME=$(basename "$file_path")
+              
+              TITLE="Updated: $FILENAME"
+              
+              DESCRIPTION=""
+              if [[ "${{ github.event_name }}" == "push" ]]; then
+                DESCRIPTION="${{ github.event.head_commit.message }}"
+              elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+                DESCRIPTION="PR ${{ github.event.action }}: ${{ github.event.pull_request.title }}"
+              elif [[ "${{ github.event_name }}" == "release" ]]; then
+                DESCRIPTION="New release: ${{ github.event.release.name }}"
+              fi
+              
+              curl -H "Content-Type: application/json" \
+                   -X POST \
+                   -d "{
+                     \"content\": \"🗣 File updated in ${{ github.repository }}!\",
+                     \"embeds\": [{
+                       \"title\": \"$TITLE\",
+                       \"description\": \"$DESCRIPTION\",
+                       \"color\": 5814783,
+                       \"fields\": [
+                         {\"name\": \"File\", \"value\": \"\`$file_path\`\", \"inline\": false},
+                         {\"name\": \"Branch\", \"value\": \"${{ github.ref_name }}\", \"inline\": true},
+                         {\"name\": \"Author\", \"value\": \"${{ github.actor }}\", \"inline\": true}
+                       ],
+                       \"timestamp\": \"${{ github.event.head_commit.timestamp || github.event.pull_request.created_at || github.event.release.created_at }}\"
+                     }]
+                   }" \
+                   $DISCORD_WEBHOOK_URL || echo "Failed to send notification for $file_path"
             fi
-          fi
-          
-          
-          curl -H "Content-Type: application/json" \
-               -X POST \
-               -d "{\"content\": \"🗣 Update in ${{ github.repository }}!\", \"embeds\": [{\"title\": \"$TITLE\", \"description\": \"$DESCRIPTION\", \"color\": 5814783, \"fields\": [{\"name\": \"Branch\", \"value\": \"${{ github.ref_name }}\"}], \"timestamp\": \"${{ github.event.head_commit.timestamp || github.event.pull_request.created_at || github.event.release.created_at }}\"}]}" \
-               $DISCORD_WEBHOOK_URL
+          done
