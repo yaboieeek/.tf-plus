@@ -52,6 +52,8 @@ Script for [STNTradingEU](https://stntrading.eu/)
   * Cross-platform price aggregation - fetches and displays prices from backpack.tf
   * Buy orders stability checker - checks if buyers are stable at the top buyer price
   * Backpack.tf link for the item
+  * Converting marketplace.tf prices to a key&ref price
+  * Caching item data for 30 minutes
 * **Bot items page**:
   * Backpack.tf link for each item
   * Marketplace.tf link for each item
