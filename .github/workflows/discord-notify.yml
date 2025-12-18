@@ -16,7 +16,7 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          curl -H \"Content-Type: application/json" \
+          curl -H "Content-Type: application/json" \
                -X POST \
                -d "{\"content\": \"🗣 Update in ${{ github.repository }}!\", \"embeds\": [{\"title\": \"${{ steps.changed-files.outputs.all_changed_files }}\", \"description\": \"${{ github.event.head_commit.message }}\", \"color\": 5814783, \"fields\": [{\"name\": \"Branch\", \"value\": \"${{ github.ref_name }}\"], \"timestamp\": \"${{ github.event.head_commit.timestamp }}\"}]}" \
                $DISCORD_WEBHOOK_URL
