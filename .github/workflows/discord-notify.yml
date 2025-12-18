@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get changed files
-        if: github.event_name == 'push'
         id: changed-files
         uses: tj-actions/changed-files@v41
         with:
@@ -24,19 +23,28 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           TITLE="Repository Update"
-          if [[ "${{ github.event_name }}" == "push" && -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
+          if [[ -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
             FILES_LIST="${{ steps.changed-files.outputs.all_changed_files }}"
-            FILES_COUNT=$(echo "$FILES_LIST" | wc -w)
             
-            if [[ $FILES_COUNT -le 3 ]]; then
-              TITLE="Changed: $FILES_LIST"
+            IFS=' ' read -ra FILES_ARRAY <<< "$FILES_LIST"
+            FILES_COUNT=${#FILES_ARRAY[@]}
+            
+            if [[ $FILES_COUNT -eq 1 ]]; then
+              FILENAME=$(basename "${FILES_ARRAY[0]}")
+              TITLE="$FILENAME"
+            elif [[ $FILES_COUNT -le 3 ]]; then
+              FILE_NAMES=""
+              for file in "${FILES_ARRAY[@]:0:3}"; do
+                FILE_NAMES="$FILE_NAMES$(basename "$file"), "
+              done
+              TITLE="${FILE_NAMES%, }"
             else
-              FIRST_FILES=$(echo "$FILES_LIST" | tr ' ' '\n' | head -3 | tr '\n' ', ')
-              TITLE="Changed $FILES_COUNT files: ${FIRST_FILES%, }..."
+              TITLE="Updated $FILES_COUNT files"
             fi
           fi
           
+          
           curl -H "Content-Type: application/json" \
                -X POST \
-               -d "{\"content\": \"🗣 Update in ${{ github.repository }}!\", \"embeds\": [{\"title\": \"$TITLE\", \"description\": \"${{ github.event.head_commit.message }}\", \"color\": 5814783, \"fields\": [{\"name\": \"Branch\", \"value\": \"${{ github.ref_name }}\"}], \"timestamp\": \"${{ github.event.head_commit.timestamp }}\"}]}" \
+               -d "{\"content\": \"🗣 Update in ${{ github.repository }}!\", \"embeds\": [{\"title\": \"$TITLE\", \"description\": \"$DESCRIPTION\", \"color\": 5814783, \"fields\": [{\"name\": \"Branch\", \"value\": \"${{ github.ref_name }}\"}], \"timestamp\": \"${{ github.event.head_commit.timestamp || github.event.pull_request.created_at || github.event.release.created_at }}\"}]}" \
                $DISCORD_WEBHOOK_URL
