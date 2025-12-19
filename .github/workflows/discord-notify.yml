@@ -3,10 +3,6 @@ name: Discord Notifications
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    types: [opened, closed, merged]
-  release:
-    types: [published]
 
 jobs:
   notify-discord:
@@ -42,10 +38,16 @@ jobs:
           for file_path in "${FILES_ARRAY[@]}"; do
             if [[ -n "$file_path" ]]; then
               FILENAME=$(json_escape "$(basename "$file_path")")
+              FILEPATH_ESCAPED=$(json_escape "$file_path")
+              
+              REPO_URL="https://github.com/${{ github.repository }}"
+              FILE_URL="$REPO_URL/blob/${{ github.ref_name }}/$file_path"
               
               TITLE="$FILENAME"
               
               DESCRIPTION=""
+              TIMESTAMP=""
+              
               if [[ "${{ github.event_name }}" == "push" ]]; then
                 FULL_COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
                 COMMIT_TITLE=$(echo "$FULL_COMMIT_MESSAGE" | head -n1)
@@ -58,6 +60,9 @@ jobs:
                 fi
                 
                 TIMESTAMP="${{ github.event.head_commit.timestamp }}"
+              
+              if [[ -z "$TIMESTAMP" ]]; then
+                TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
               fi
               
               curl -H "Content-Type: application/json" \
@@ -65,9 +70,9 @@ jobs:
                    -d "{
                     \"content\": \"🗣 Update in $REPO_NAME!\",
                     \"embeds\": [{
-                      \"title\": \"$TITLE\",
+                      \"title\": \"[$TITLE]($FILE_URL)\",
                       \"description\": \"$DESCRIPTION\",
-                      \"color\": 11403055,
+                      \"color\": 10181046,
                       \"fields\": [
                         {\"name\": \"Branch\", \"value\": \"$BRANCH_NAME\", \"inline\": true},
                         {\"name\": \"Author\", \"value\": \"$AUTHOR_NAME\", \"inline\": true}
