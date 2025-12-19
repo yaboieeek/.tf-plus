@@ -57,7 +57,7 @@ Script for [STNTradingEU](https://stntrading.eu/)
 * **Bot items page**:
   * Backpack.tf link for each item
   * Marketplace.tf link for each item
-  * Force schema update feature for keeping the game schema relevant
+  * Force schema update feature for keeping the game schema relevant (using autobot.tf)
 
 ### Screenshots
 <div style="display:inline">
