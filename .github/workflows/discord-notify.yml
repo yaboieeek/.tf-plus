@@ -23,6 +23,7 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
+
           json_escape() {
             echo "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\//\\\//g' -e 's/\n/\\n/g' -e 's/\r/\\r/g' -e 's/\t/\\t/g'
           }
@@ -60,7 +61,7 @@ jobs:
                 fi
                 
                 TIMESTAMP="${{ github.event.head_commit.timestamp }}"
-              fi 
+              fi
               
               if [[ -z "$TIMESTAMP" ]]; then
                 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -71,7 +72,8 @@ jobs:
                    -d "{
                     \"content\": \"🗣 Update in $REPO_NAME!\",
                     \"embeds\": [{
-                      \"title\": \"[$TITLE]($FILE_URL)\",
+                      \"title\": \"$TITLE\",
+                      \"url\": \"$FILE_URL\",
                       \"description\": \"$DESCRIPTION\",
                       \"color\": 10181046,
                       \"fields\": [
@@ -82,5 +84,5 @@ jobs:
                     }]
                   }" \
                    $DISCORD_WEBHOOK_URL || echo "Failed to send notification for $file_path"
-            fi 
-          done 
+            fi
+          done
