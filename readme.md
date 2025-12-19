@@ -128,3 +128,5 @@ Feeling like a simple 'Thank you' isn't enough? You can donate via Steam Trade o
 </br>
 [![Steam Tradeoffer Link](https://img.shields.io/badge/Donate-blue?style=for-the-badge&logo=steam)](https://steamcommunity.com/tradeoffer/new/?partner=1006822318&token=ww-b0boA)
 
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
