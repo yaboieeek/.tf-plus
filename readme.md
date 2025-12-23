@@ -58,6 +58,7 @@ Script for [STNTradingEU](https://stntrading.eu/)
   * Backpack.tf link for each item
   * Marketplace.tf link for each item
   * Force schema update feature for keeping the game schema relevant (using autobot.tf)
+  * Switching tooltip buttons position from the bottom of the tooltip to the top if needed 
 
 ### Screenshots
 <div style="display:inline">
