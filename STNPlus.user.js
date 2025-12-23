@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         STN+
-// @version      2.4.1
+// @version      2.5.0
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
 // @description  Changes unusual item page UI | Changes bot page age UI
 // @author       eeek
@@ -804,6 +804,10 @@ class ItemsController {
         this.items = [];
         this.events = events;
         this.schemaController = schemaController;
+        this.tooltipPosition = this.getCachedTooltipPosition();
+        this.initPositionSwap();
+
+        this.menuCommandTooltipSwitch();
     }
 
     addItem(item) {
@@ -818,6 +822,74 @@ class ItemsController {
     convertToOldTauntName(tauntname) {
         this.events.emit('items_controller', `triggered a taunt name conversion for ${tauntname}`)
         return tauntname.replace('Taunt: ', '') + ' Taunt';
+    }
+
+    menuCommandTooltipSwitch() {
+        const switchPos = () => {
+            this.changeTooltipPosition();
+            this.switchTooltipPositionStatus();
+        }
+        GM_registerMenuCommand('Switch tooltip buttons position', switchPos)
+    }
+
+    changeTooltipPosition() {
+        this.events.emit('debug', `Switching tooltip position...` )
+        const style = `
+        .inventoryItem-Tooltip {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .inventoryItem-Tooltip .btn-group {
+            order: -1;
+        }
+        `;
+
+        if (this.tooltipPosition === 'top') {
+            document.querySelector('.buttonsTopper')?.remove();
+            this.events.emit('debug', `Removing styling element...` )
+            return;
+        }
+        this.events.emit('debug', `Creating styling element...` )
+        const $s = document.createElement('style');
+        $s.classList.add('buttonsTopper');
+        $s.innerHTML = style;
+        document.body.append($s)
+    }
+
+    switchTooltipPositionStatus() {
+        this.tooltipPosition = this.tooltipPosition === 'top' ? 'bottom' : 'top';
+        this.updateTooltipCache();
+    }
+
+    getCachedTooltipPosition() {
+        return GM_getValue('ttpos', 'bottom');
+    }
+
+    updateTooltipCache() {
+        GM_setValue('ttpos', this.tooltipPosition);
+    }
+
+    initPositionSwap() {
+        this.events.emit('debug', `Initializing current tooltip position...`);
+        if (this.tooltipPosition === 'bottom') return this.events.emit('debug', 'Position is bottom, returning.');
+
+        const style = `
+        .inventoryItem-Tooltip {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .inventoryItem-Tooltip .btn-group {
+            order: -1;
+        }
+        `;
+
+        this.events.emit('debug', `Creating styling element...` )
+        const $s = document.createElement('style');
+        $s.classList.add('buttonsTopper');
+        $s.innerHTML = style;
+        document.body.append($s)
     }
 
 }
@@ -866,6 +938,10 @@ class ItemUI {
         element.dataset.bsOriginalTitle = template.innerHTML;
 
     }
+
+
+
+
 }
 /////////////////////UTILS//////////////////////////////////////////////////
 async function checkForLoad() {
