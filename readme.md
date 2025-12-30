@@ -39,6 +39,9 @@ Tech stack: </br>
 [![Chrome Version](https://img.shields.io/badge/Get_for_Chrome-grey?style=for-the-badge&logo=chromewebstore)](https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en&pli=1)
 [![Firefox Version](https://img.shields.io/badge/Get_for_Firefox-grey?style=for-the-badge&logo=firefoxbrowser)](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
 
+> [!CAUTION]
+> Enable the developer mode in your browser and allow userscripts in tampermonkey extension settings
+
 ## STN+
 Script for [STNTradingEU](https://stntrading.eu/)
 </br>
