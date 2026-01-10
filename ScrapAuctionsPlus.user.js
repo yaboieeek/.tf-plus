@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name         ScrapAuctions+
-// @namespace    https://steamcommunity.com/profiles/76561198967088046
-// @version      2.0.3-b1
-// @description  Block feature | Links in the tooltip | Currency adder for aucitons
+// @name         ScrapAuction+
+// @namespace    https://discord.gg/jygnfCRjna <<< for more of my scripts/announcements/suggestions
+// @version      2.1.0
+// @description  it adds cool buttons
 // @author       eeek
 // @match        https://scrap.tf/auctions*
-// @updateURL https://github.com/yaboieeek/.tf-plus/raw/refs/heads/main/ScrapAuctionsPlus.user.js
-// @downloadURL https://github.com/yaboieeek/.tf-plus/raw/refs/heads/main/ScrapAuctionsPlus.user.js
+// @updateURL https://github.com/yaboieeek/BPTF-button-on-different-sites/raw/refs/heads/main/ScrapAuctionsPlus.user.js
+// @downloadURL https://github.com/yaboieeek/BPTF-button-on-different-sites/raw/refs/heads/main/ScrapAuctionsPlus.user.js
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=scrap.tf
 // @grant        GM_info
 // @grant        GM_getValue
@@ -26,6 +26,7 @@ const SELECTORS = {
     ITEM: '.item',
 
     HEADER_PANEL: '.new-raffle',
+    AUCTIONS_FILTER_PANEL: '.filter-options',
     BLOCKLIST_PANEL: '.panel-title',
 
     TARGET_HEADER: '.inv-switcher',
@@ -188,6 +189,10 @@ const styles = `
         color: silver;
         min-width: 5rem
     }
+
+    .filter-hidden {
+        display: none;
+    }
 `
 GM_addStyle(styles);
 //////////////////////TYPES////////////////////////////////////
@@ -247,8 +252,10 @@ class Logger extends Subscriber {
         console.log(`Logger created.`)
     }
 
-    on(event, data) {
-        console.log(`[Logger][${event}]`, data);
+    on(event, data, caller = null) {
+        console.log(`[ScrapAuctions+]` +
+                    `${caller ? '[' + caller + ']' : ''}` +
+                    `[${event}]`, data);
     }
 }
 
@@ -382,6 +389,14 @@ class Auction extends FromElement {
         this.user = new User(this.element.querySelector(SELECTORS.USER));
 
         this.items = [...this.element.querySelectorAll(SELECTORS.ITEM)].map(e => new Item(e));
+
+        this.type = this.getAuctionTypeFromItems();
+        this.element.setAttribute('auction_type', this.type)
+    }
+
+    getAuctionTypeFromItems() {
+        if (this.items.some(i => i.quality === 5)) return 'unusual';
+        return 'sucks'
     }
 }
 
@@ -394,11 +409,10 @@ class AuctionsController {
     getAuctions() {
         const auctions = [...document.querySelectorAll(SELECTORS.AUCTION)];
         auctions.forEach(e => {
-            //there's no way an average person is looking here. if you're reviewing the code, ffs, just give me the job I'll learn the rest later
             const a = new Auction(e);
             this.auctions.push(a);
         })
-        this.events.emit('log', `Added ${auctions.length} auctions to controller`);
+        this.events.emit('debug', `Added ${auctions.length} auctions to controller`);
     }
 }
 
@@ -407,13 +421,17 @@ class AuctionsUIController extends Subscriber {
         super();
         this.auctionsController = auctionsController;
         this.events = globalEvents;
+        this.savedFilter = GM_getValue('savedFilter', null);
+        this.events.emit('debug', this.savedFilter, 'AuctionsUIController');
+        this.initialFiltering(this.savedFilter);
     }
 
     on(event, data) {
         switch (event) {
             case 'user_blocked': this.handleUserBlocked(data); break;
             case 'user_unblocked': this.handleUserUnblocked(data); break;
-            case 'blocklist_initialized': this.events.emit('log', 'BlockList received!'); this.initialHide(data); break;
+            case 'filter_changed': this.handleNewFilter(data); break;
+            case 'blocklist_initialized': this.events.emit('debug', 'BlockList received!'); this.initialHide(data); break;
         }
     }
 
@@ -448,6 +466,44 @@ class AuctionsUIController extends Subscriber {
         for (const user of data.blocklist) {
             this.handleUserBlocked(user);
         }
+    }
+
+    handleNewFilter(filterValue) {
+        this.updateSavedFilter(filterValue);
+        this.events.emit('debug',`Applying ${filterValue} filter to auctions.`, 'AuctionUIController');
+        if (filterValue === 'unusual') {
+            this.performUnuFilter();
+        } else {
+            this.revealAll();
+        }
+    }
+
+    initialFiltering(filterValue = null) {
+        this.events.emit('debug', 'Performing initial filtering', 'AuctionsUIController');
+        if (filterValue === 'unusual') {
+            this.events.emit('debug', `${this.savedFilter}, ${this.filterValue} || filtering`,
+             'AuctionsUIController');
+            this.performUnuFilter();
+        }
+    }
+
+    revealAll() {
+        this.auctionsController.auctions.forEach(a => a.element.classList.remove('filter-hidden'))
+    }
+
+    performUnuFilter() {
+        let counter = 0;
+        this.auctionsController.auctions.filter(a => a.type !== 'unusual')
+            .forEach(a => {
+            counter++;
+            a.element.classList.add('filter-hidden');
+        });
+        ScrapTF.Crouton.Add(`${counter} non-unusual auctions were hidden`);
+    }
+
+    updateSavedFilter(filterValue = null) {
+        this.savedFilter = filterValue;
+        GM_setValue('savedFilter', filterValue);
     }
 }
 
@@ -641,7 +697,8 @@ class ItemsUIController {
     addSelectionUI() {
         const button = document.createElement('button');
         const container = document.createElement('div');
-        button.style = 'margin-left: 0.5rem'
+        button.style = 'margin-left: 0.5rem';
+        // im sorry
         container.style = 'height: max-content; width: max-content; position: absolute; z-index: 999; border: 3px solid rgb(80, 80, 80); border-radius: 0.5rem; padding: 1rem 1rem 2rem 2rem;display: flex;flex-direction: column;gap: 0.5rem; background: #333;margin-top: 1rem; transform: translateX(50%)';
         container.classList.add('hidden');
         button.className = 'btn btn-info';
@@ -777,18 +834,19 @@ class ItemUI {
                 if (this.item.name === 'Unusualifier' || this.item.name.includes('Kit')) return null;
                 return `https://marketplace.tf/items/tf2/${Utils.makeSKU(this.item)}`
             }
-            case EXTERNAL_LINKS.bp: {
+            case EXTERNAL_LINKS.bp: 
                 if (this.item.name === 'Unusualifier' || this.item.name.includes('Kit')) return null;
                 if (this.item.wear) return null // CBA it RAHHHHHHHHHH just use my or not my button on mp
                 return `https://backpack.tf/stats/${encodeURIComponent(QUALITIES[this.item.quality])}/${encodeURIComponent(((KILLSTREAKS[this.item.killstreakTier])|| '') + this.item.name)}/Tradable/${encodeURIComponent(this.item.craftable ? 'Craftable' : 'Non-Craftable')}/${encodeURIComponent(this.item?.priceIndex ?? '')}`
-            }
-            case EXTERNAL_LINKS.history: return `https://backpack.tf/item/${this.item.id}`;
-            case EXTERNAL_LINKS.mannco: {
+                case EXTERNAL_LINKS.history:
+                return `https://backpack.tf/item/${this.item.id}`;
+            case EXTERNAL_LINKS.mannco:
                 if (this.item.quality !== 5 || this.item.name === 'Unusualifier') return null;
                 return `https://mannco.store/item/440-` +
                     this.formatForUrl(this.item.effectName) +
                     '-unusual-' +
-                    this.formatForUrl(this.item.name);            };
+                    this.formatForUrl(this.item.name);
+
             case EXTERNAL_LINKS.scm: {
                 let before = '', after = '';
                 let wrap = (before, current, after) => before + encodeURIComponent(current) + after;
@@ -825,13 +883,50 @@ class ItemUI {
     }
 }
 
+class FiltersUI {
+    constructor(events) {
+        this.events = events;
+        this.filterTypes = ['All', 'Unusuals only']
+    }
+
+    createUI() {
+        const $t = document.querySelector(SELECTORS.AUCTIONS_FILTER_PANEL);
+
+        const $s = $('select');
+        for (const filterType of this.filterTypes) {
+            const option = this.createOption(filterType);
+            $s.append(option);
+        }
+        $s.className = `btn btn-primary dropdown-toggle btn-m`
+
+        $t.append($s);
+        $s.addEventListener('change', () => this.events.emit('filter_changed', $s.value));
+
+        this.initDefaultSelect($s);
+    }
+
+    createOption(filterType) {
+        const $option = $('option');
+        $option.innerText = filterType;
+        $option.value = filterType === 'All' ? 'sucks' : 'unusual'
+
+        return $option;
+    }
+
+    initDefaultSelect($s) {
+        const savedFilter = GM_getValue('savedFilter', null);
+        if (savedFilter === 'unusual') $s.value = savedFilter;
+    }
+
+}
 
 //////////////////////////////////////////////////////////////////
 ////////////////////////SPECIFIC AUCTION CLASSES /////////////////
 
 class SelectionUI {
     constructor() {
-        this.target = document.querySelector(SELECTORS.TARGET_HEADER);
+        this.globalKeyPriceInScrap =
+            this.target = document.querySelector(SELECTORS.TARGET_HEADER);
         this.inventoryController = null;
         this.maxCurrencies = {
             keys: 0,
@@ -1128,9 +1223,11 @@ class MetalConverter {
 
 class App {
     init() {
-        if(window.location.href.match(/\/auctions(?:\/(\d+)|\/)?$/)) {
+        if(window.location.href.match(/\/auctions(?:\/(\d+))|(?:\/)?$/)) {
+            console.log('Initializing auctions page')
             this.initAuctionsPage();
         } else {
+            console.log('Initializing specific page')
             this.initSpecificAuctionView();
         }
     }
@@ -1138,6 +1235,7 @@ class App {
     initAuctionsPage() {
         this.globalEvents = new EventBus();
         this.initLogger();
+        this.initFilters();
         this.initAuctionsController();
         this.initBlockController();
         this.initTitleChange();
@@ -1208,6 +1306,10 @@ class App {
             const item = new Item(ie);
             const itemUI = new ItemUI(item).initializeTooltip().addButtons();
         })
+    }
+
+    initFilters() {
+        new FiltersUI(this.globalEvents).createUI();
     }
 }
 
@@ -1288,6 +1390,10 @@ class Utils {
             return sku;
         }
     }
+}
+
+function $(type) {
+    return document.createElement(type)
 }
 
 ///////////////////////////////////////////////////////////////////////
