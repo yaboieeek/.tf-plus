@@ -14,7 +14,7 @@
 // @grant        GM_addStyle
 // ==/UserScript==
 
-/* GM_setValue('AVAILABLE_LINKS', null) */
+
 ///////////////////////CONST///////////////////////////////////
 const SELECTORS = {
     AUCTION: '.panel-auction',
