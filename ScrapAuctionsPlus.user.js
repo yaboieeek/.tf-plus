@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ScrapAuction+
 // @namespace    https://discord.gg/jygnfCRjna <<< for more of my scripts/announcements/suggestions
-// @version      2.1.0
+// @version      2.1.1
 // @description  it adds cool buttons
 // @author       eeek
 // @match        https://scrap.tf/auctions*
@@ -14,7 +14,7 @@
 // @grant        GM_addStyle
 // ==/UserScript==
 
-
+/* GM_setValue('AVAILABLE_LINKS', null) */
 ///////////////////////CONST///////////////////////////////////
 const SELECTORS = {
     AUCTION: '.panel-auction',
@@ -482,7 +482,7 @@ class AuctionsUIController extends Subscriber {
         this.events.emit('debug', 'Performing initial filtering', 'AuctionsUIController');
         if (filterValue === 'unusual') {
             this.events.emit('debug', `${this.savedFilter}, ${this.filterValue} || filtering`,
-             'AuctionsUIController');
+                             'AuctionsUIController');
             this.performUnuFilter();
         }
     }
@@ -1223,11 +1223,17 @@ class MetalConverter {
 
 class App {
     init() {
-        if(window.location.href.match(/\/auctions(?:\/(\d+))|(?:\/)?$/)) {
-            console.log('Initializing auctions page')
+        const patterns = {
+            auctionsList: /^https:\/\/scrap\.tf\/auctions(?:\/\d+)?\/?(?:\?.*)?$/
+        };
+
+        const currentUrl = window.location.href;
+
+        if (patterns.auctionsList.test(currentUrl)) {
+            console.log('Initializing auctions page');
             this.initAuctionsPage();
         } else {
-            console.log('Initializing specific page')
+            console.log('Initializing specific auction page');
             this.initSpecificAuctionView();
         }
     }
