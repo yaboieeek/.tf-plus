@@ -1,13 +1,12 @@
 // ==UserScript==
 // @name         ScrapAuction+
 // @namespace    https://discord.gg/jygnfCRjna <<< for more of my scripts/announcements/suggestions
-// @version      2.1.1
+// @version      2.4.1
 // @description  it adds cool buttons
 // @author       eeek
 // @match        https://scrap.tf/auctions*
-// @updateURL https://github.com/yaboieeek/BPTF-button-on-different-sites/raw/refs/heads/main/ScrapAuctionsPlus.user.js
-// @downloadURL https://github.com/yaboieeek/BPTF-button-on-different-sites/raw/refs/heads/main/ScrapAuctionsPlus.user.js
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=scrap.tf
+// @updateURL https://github.com/yaboieeek/.tf-plus/raw/refs/heads/main/ScrapAuctionsPlus.user.js
+// @downloadURL https://github.com/yaboieeek/.tf-plus/raw/refs/heads/main/ScrapAuctionsPlus.user.js// @icon         https://www.google.com/s2/favicons?sz=64&domain=scrap.tf
 // @grant        GM_info
 // @grant        GM_getValue
 // @grant        GM_setValue
