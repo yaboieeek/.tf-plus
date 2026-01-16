@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         ScrapAuction+
+// @name         ScrapAuctions+
 // @namespace    https://discord.gg/jygnfCRjna <<< for more of my scripts/announcements/suggestions
 // @version      2.4.1
 // @description  it adds cool buttons
