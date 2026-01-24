@@ -771,8 +771,9 @@ class SchemaController {
     }
 
     storeEffects() {
+
         for (const effect of this.schema.raw.schema.attribute_controlled_attached_particles) {
-            !effect.name.includes('_') && this.effects.set(effect.id, effect.name)
+            !effect.name.includes('_') && this.effects.set(effect.id, effect.name);
         }
         this.events.emit('schema_controller', `initialized ${this.effects.size} effects information...`);
 
@@ -1015,7 +1016,7 @@ class NearestEffectsUI {
         $handlerContainer.append($select);
         $select.value = this.sanitizeEffectName(effectName);
         const html = $handlerContainer.innerHTML;
-        $t.innerHTML = $t.innerHTML.replace(` ${effectName} `, html);
+        $t.innerHTML = $t.innerHTML.replace(`Unusual ${effectName} `, '<span class="nearest-effect-star">★</span>' + html);
         $handlerContainer.remove();
 
         this.setupChangeHandler(document.querySelector('.nearest-effects-selection'), effectName);
@@ -1036,6 +1037,7 @@ class NearestEffectsUI {
             window.location.href = newUrl;
         })
     }
+
 
     sanitizeEffectName(name) {
         return name.trim().replace(/\s+/g, '+');
@@ -1153,6 +1155,12 @@ function $(type) {
 }
 
 GM_addStyle(`
+
+     :root {
+         --barely-visible-border-color: #3a2b54;
+     }
+
+
     .buttons-container {
         width: 50%;
         min-width: 360px;
@@ -1322,17 +1330,30 @@ GM_addStyle(`
     }
 
     .nearest-effects-selection {
-        font-size: inherit;
-      margin: 0 0.5rem;
+        color: var(--bs-purple) !important;
+      font-size: inherit;
+      margin: 0 .5rem 0 0;
+      width: min-content;
       padding: 0;
       background: var(--bs-body-color);
       color: inherit;
-      border: 1px solid var(--bs-focus-ring-color);
-      border-radius: 5px;
-
+      border: 1px solid var(--barely-visible-border-color);
+      border-left: none;
+      border-radius: 0 5px 5px 0;
       &:hover {
           filter: brightness(1.5);
       }
+    }
+
+    .nearest-effects-selection option {
+        color: white;
+    }
+
+    .nearest-effect-star {
+        border: 1px solid var(--barely-visible-border-color);
+        border-right: 0;
+        border-radius: 5px 0 0 5px;
+        color: var(--bs-purple) !important;
     }
     .effect-option {
         font-size: 16px;
