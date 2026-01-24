@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         STN+
-// @version      2.6.0
+// @version      2.6.1
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
 // @description  Changes unusual item page UI | Changes bot page age UI
 // @author       eeek
@@ -772,7 +772,7 @@ class SchemaController {
 
     storeEffects() {
         for (const effect of this.schema.raw.schema.attribute_controlled_attached_particles) {
-            this.effects.set(effect.id, effect.name)
+            !effect.name.includes('_') && this.effects.set(effect.id, effect.name)
         }
         this.events.emit('schema_controller', `initialized ${this.effects.size} effects information...`);
 
