@@ -23,7 +23,8 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          # Функция для корректного экранирования JSON
+          # Функция для корректного экранирования JSONs
+          
           json_escape() {
             echo -n "$1" | \
               sed -e 's/\\/\\\\/g' \
