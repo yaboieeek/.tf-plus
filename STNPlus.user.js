@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         STN+
-// @version      2.5.0
+// @version      2.6.0
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
 // @description  Changes unusual item page UI | Changes bot page age UI
 // @author       eeek
@@ -28,6 +28,7 @@ class Config {
     static defaultKeyPriceFetchInterval = 12 * 60 * 1000 // every 12 hours
 
     static defaultBuyersStabilityCount = 3; // We will consider buyers stable based on this amount of buyorders
+    static maxNearestEffects = 4 // amount of effects AROUND the current one in the effects selector. Must be an odd number
 }
 
 class KeyPriceController {
@@ -204,6 +205,7 @@ class Listing {
             if (!prices.available) {
                 [keysContainer, refContainer].forEach(c => c.classList.add('unavailable'));
                 listingContainer.title = `STN is not ${intent === 'sell' ? 'selling' : 'buying'} this item right now.`
+                new bootstrap.Tooltip(listingContainer)
             }
         }
 
@@ -305,7 +307,7 @@ class ListingManager {
         const bptfButton = document.createElement('a');
         bptfButton.className = 'backpack-tf-btn btn';
         bptfButton.href = `https://backpack.tf/stats/Unusual/${this.itemName.replace(/%/, '%25')}/Tradable/Craftable/${this.priceIndex}`; // guess why 25??? because fukass encoder aint doing shit to '%'
-        bptfButton.target = `blank`;
+        bptfButton.target = `_blank`;
 
         const viewonContainer = document.createElement('div');
         const [viewOn, siteName] = [document.createElement('div'), document.createElement('div')];
@@ -342,6 +344,7 @@ class ListingManager {
             botInvButton.title = 'Bot inventory is not available right now'
         }
 
+        new bootstrap.Tooltip(botInvButton);
 
 
         this.stockButtons.forEach(button => {button.innerText = ''; button.classList.add('stock', 'rounded-1'); button.classList.remove('ms-sm-3', 'rounded-0');});
@@ -355,13 +358,32 @@ class ListingManager {
         this.stockButtons[1].title = 'Remove from wishlist';
         this.stockButtons[2].title = 'Request repricing';
 
+        this.stockButtons.forEach(b => new bootstrap.Tooltip(b))
+
         ///make a fancy container for buttons
         const stockContainer = document.createElement('div');
         stockContainer.append(...this.stockButtons, botInvButton)
         stockContainer.className = 'stock-buttons-container';
-
+        stockContainer.prepend(this.createScmButton());
         ///returning a nice elements array
         return [bptfButton, stockContainer]
+    }
+
+    createScmButton() {
+        const $b = $('a')
+        .icon('steam-symbol')
+        .square();
+
+        $b.href = `https://steamcommunity.com/market/listings/440/Unusual%20${encodeURIComponent(this.itemName)}`
+        $b.target = '_blank';
+        $b.setAttribute('data-bs-toggle', 'tooltip');
+        $b.setAttribute('data-bs-placement', 'top');
+        $b.title = 'SCM Page';
+
+        $b.classList.add('btn', 'stock', 'rounded-1', 'bg-secondary', 'text-white', 'fs-2');
+        new bootstrap.Tooltip($b);
+
+        return $b
     }
 
     getStnPrices() {
@@ -496,7 +518,7 @@ class ListingManager {
     _createBuyOrderStabilityInfoElement() {
         const stabilityContainer = document.createElement('div');
         stabilityContainer.className = 'listings stability';
-        if (typeof this.buyOrderStability === 'undefined') return ''; /// we skip if broken value
+        if (typeof this.buyOrderStability === 'undefined') return; /// we skip if broken value
 
         stabilityContainer.innerText = `${this.buyOrderStability}%`;
         stabilityContainer.title = `Based on ${Config.defaultBuyersStabilityCount} buy orders.`
@@ -943,6 +965,82 @@ class ItemUI {
 
 
 }
+
+
+///////////////////////////////////////////////////////////////////////////
+
+
+
+class NearestEffectsUI {
+    constructor(schemaController) {
+        this.radius = Math.floor((Config?.maxNearestEffects?? 4) / 2); //odd numbers only dawg
+        this.schemaController = schemaController;
+    }
+
+    get nearestEffects() {
+        const effectElement = document.querySelector("[srcset*='particles'");
+        const priceIndex = +effectElement.getAttribute('srcset').match(/particles\/([^@]+)/)[1];
+
+        const effectsArray = [...this.schemaController.effects];
+        const pivotIndex = effectsArray.findIndex(([id,_]) => +id === priceIndex);
+
+        const result = effectsArray.slice(
+            Math.max(0, pivotIndex - this.radius),
+            Math.min(effectsArray.length, pivotIndex + this.radius + 1)
+        );
+
+        return result; // [[id, effect], ...rest]
+    }
+
+    modifyTitleHTML() {
+        const $t = document.querySelectorAll('.card-title')[1];
+        const effectName = this.currentEffectName;
+
+
+        const $handlerContainer = document.createElement('div');
+        const $select = document.createElement('select');
+
+        $select.className = 'nearest-effects-selection'
+
+        for (const [id, name] of this.nearestEffects) {
+            const $o = document.createElement('option');
+            $o.className = 'effect-option';
+            $o.value = this.sanitizeEffectName(name);
+            $o.innerText = name;
+            (name === effectName) && $o.setAttribute('selected', 'selected')
+            $select.append($o);
+
+        }
+
+        $handlerContainer.append($select);
+        $select.value = this.sanitizeEffectName(effectName);
+        const html = $handlerContainer.innerHTML;
+        $t.innerHTML = $t.innerHTML.replace(` ${effectName} `, html);
+        $handlerContainer.remove();
+
+        this.setupChangeHandler(document.querySelector('.nearest-effects-selection'), effectName);
+    }
+
+    get currentEffectName() {
+        const effectElement = document.querySelector("[srcset*='particles'");
+        const priceIndex = +effectElement.getAttribute('srcset').match(/particles\/([^@]+)/)[1];
+
+        return this.schemaController.effects.get(priceIndex);
+    }
+
+    setupChangeHandler(select, current) {
+        select.addEventListener('change', () => {
+            const newEffect = select.value;
+            console.log('value changed to ' + newEffect )
+            const newUrl = window.location.href.replace(this.sanitizeEffectName(current), this.sanitizeEffectName(newEffect))
+            window.location.href = newUrl;
+        })
+    }
+
+    sanitizeEffectName(name) {
+        return name.trim().replace(/\s+/g, '+');
+    }
+}
 /////////////////////UTILS//////////////////////////////////////////////////
 async function checkForLoad() {
     return new Promise((resolve, reject) => {
@@ -967,10 +1065,15 @@ class App {
         this.initItemPage();
     }
 
-    initItemPage() {
-        new KeyPriceController();
+    async initItemPage() {
+        this.initLogger();
+        await this.initSchema();
+        const nearestEffectsUI = new NearestEffectsUI(this.schemaController);
+        nearestEffectsUI.modifyTitleHTML();
+
+        const keyPriceController = new KeyPriceController();
         const cache = new ListingsDataCache();
-        new ListingManager(cache)
+        const listingManager = new ListingManager(cache);
     }
 
     async initBotPage() {
@@ -1026,6 +1129,28 @@ class App {
 let app = new App();
 await app.init();
 
+function $(type) {
+    const e = document.createElement(type)
+
+    e.square = function(remAmount) {
+        Object.assign(this.style, {
+            width: remAmount+'rem',
+            height: remAmount+'rem',
+            lineHeight: 1
+        })
+
+        return this
+    }
+
+    e.icon = function(iconName) {
+        const icon = document.createElement('i');
+        icon.className = `fa${iconName === 'steam-symbol' ? 'b' : ''} fa-${iconName}`;
+        this.append(icon);
+        return this
+    }
+
+    return e
+}
 
 GM_addStyle(`
     .buttons-container {
@@ -1195,4 +1320,22 @@ GM_addStyle(`
     .invalid {
         filter: grayscale(1) brightness(0.8)
     }
+
+    .nearest-effects-selection {
+        font-size: inherit;
+      margin: 0 0.5rem;
+      padding: 0;
+      background: var(--bs-body-color);
+      color: inherit;
+      border: 1px solid var(--bs-focus-ring-color);
+      border-radius: 5px;
+
+      &:hover {
+          filter: brightness(1.5);
+      }
+    }
+    .effect-option {
+        font-size: 16px;
+    }
+    .
     `)
