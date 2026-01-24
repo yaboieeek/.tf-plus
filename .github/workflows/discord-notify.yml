@@ -23,14 +23,15 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
+          # Функция для корректного экранирования JSON
           json_escape() {
             echo -n "$1" | \
-                sed -e 's/\\/\\\\/g' \     
-                -e 's/"/\\"/g' \         
-                -e 's/\//\\\//g' \       
-                -e 's/\r/\\r/g' \      
-                -e 's/\t/\\t/g' \       
-                -e ':a;N;$!ba;s/\n/\\n/g' 
+              sed -e 's/\\/\\\\/g' \
+                  -e 's/"/\\"/g' \
+                  -e 's/\//\\\//g' \
+                  -e 's/\r/\\r/g' \
+                  -e 's/\t/\\t/g' \
+                  -e ':a;N;$!ba;s/\n/\\n/g'
           }
           
           FILES_LIST="${{ steps.changed-files.outputs.all_changed_files }}"
@@ -55,14 +56,19 @@ jobs:
               TIMESTAMP=""
               
               if [[ "${{ github.event_name }}" == "push" ]]; then
-                FULL_COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
-                COMMIT_TITLE=$(echo "$FULL_COMMIT_MESSAGE" | head -n1)
-                COMMIT_DESCRIPTION=$(echo "$FULL_COMMIT_MESSAGE" | tail -n+2 | sed '/^$/d')
+                # Получаем сообщение коммита с правильным экранированием
+                COMMIT_MESSAGE_RAW="${{ github.event.head_commit.message }}"
+                # Экранируем для JSON
+                COMMIT_MESSAGE_ESCAPED=$(json_escape "$COMMIT_MESSAGE_RAW")
                 
-                if [[ -n "$COMMIT_DESCRIPTION" ]]; then
-                  DESCRIPTION="**$COMMIT_TITLE**\n\n$COMMIT_DESCRIPTION"
+                # Разделяем заголовок и описание
+                FIRST_LINE=$(echo "$COMMIT_MESSAGE_RAW" | head -n1)
+                REST=$(echo "$COMMIT_MESSAGE_RAW" | tail -n+2)
+                
+                if [[ -n "$REST" ]]; then
+                  DESCRIPTION=$(json_escape "**$FIRST_LINE**\n\n$REST")
                 else
-                  DESCRIPTION="**$COMMIT_TITLE**"
+                  DESCRIPTION=$(json_escape "**$FIRST_LINE**")
                 fi
                 
                 TIMESTAMP="${{ github.event.head_commit.timestamp }}"
@@ -72,9 +78,40 @@ jobs:
                 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
               fi
               
-              curl -H "Content-Type: application/json" \
-                   -X POST \
-                   -d "{
+              # Создаем JSON с помощью jq (лучший способ)
+              if command -v jq &> /dev/null; then
+                JSON_PAYLOAD=$(jq -n \
+                  --arg content "🗣 Update in $REPO_NAME!" \
+                  --arg title "$TITLE" \
+                  --arg url "$FILE_URL" \
+                  --arg description "$DESCRIPTION" \
+                  --arg branch "$BRANCH_NAME" \
+                  --arg author "$AUTHOR_NAME" \
+                  --arg timestamp "$TIMESTAMP" \
+                  '{
+                    content: $content,
+                    embeds: [{
+                      title: $title,
+                      url: $url,
+                      description: $description,
+                      color: 10181046,
+                      fields: [
+                        {name: "Branch", value: $branch, inline: true},
+                        {name: "Author", value: $author, inline: true}
+                      ],
+                      timestamp: $timestamp
+                    }]
+                  }')
+                
+                echo "$JSON_PAYLOAD" | curl -H "Content-Type: application/json" \
+                  -X POST \
+                  -d @- \
+                  $DISCORD_WEBHOOK_URL || echo "Failed to send notification for $file_path"
+              else
+                # Fallback без jq (менее надежно)
+                curl -H "Content-Type: application/json" \
+                  -X POST \
+                  -d "{
                     \"content\": \"🗣 Update in $REPO_NAME!\",
                     \"embeds\": [{
                       \"title\": \"$TITLE\",
@@ -88,6 +125,7 @@ jobs:
                       \"timestamp\": \"$TIMESTAMP\"
                     }]
                   }" \
-                   $DISCORD_WEBHOOK_URL || echo "Failed to send notification for $file_path"
+                  $DISCORD_WEBHOOK_URL || echo "Failed to send notification for $file_path"
+              fi
             fi
           done
