@@ -23,16 +23,15 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-
           json_escape() {
             echo -n "$1" | \
-            sed -e 's/\\/\\\\/g' \       
-            -e 's/"/\\"/g' \        
-            -e 's/\//\\\//g' \     
-            -e 's/\r/\\r/g' \       
-            -e 's/\t/\\t/g' \        
-            -e ':a;N;$!ba;s/\n/\\n/g'
-          }  
+                sed -e 's/\\/\\\\/g' \     
+                -e 's/"/\\"/g' \         
+                -e 's/\//\\\//g' \       
+                -e 's/\r/\\r/g' \      
+                -e 's/\t/\\t/g' \       
+                -e ':a;N;$!ba;s/\n/\\n/g' 
+          }
           
           FILES_LIST="${{ steps.changed-files.outputs.all_changed_files }}"
           
