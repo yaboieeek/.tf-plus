@@ -18,6 +18,7 @@
 // @grant GM_registerMenuCommand
 // @grant GM_addStyle
 // ==/UserScript==
+//test comment 
 
 class Config {
     static cache = {
