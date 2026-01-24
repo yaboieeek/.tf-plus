@@ -25,8 +25,14 @@ jobs:
         run: |
 
           json_escape() {
-            echo "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\//\\\//g' -e 's/\n/\\n/g' -e 's/\r/\\r/g' -e 's/\t/\\t/g'
-          }
+            echo -n "$1" | \
+            sed -e 's/\\/\\\\/g' \       
+            -e 's/"/\\"/g' \        
+            -e 's/\//\\\//g' \     
+            -e 's/\r/\\r/g' \       
+            -e 's/\t/\\t/g' \        
+            -e ':a;N;$!ba;s/\n/\\n/g'
+          }  
           
           FILES_LIST="${{ steps.changed-files.outputs.all_changed_files }}"
           
