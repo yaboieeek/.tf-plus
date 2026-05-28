@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         STN+
-// @version      2.6.1
+// @version      2.7.1
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
 // @description  Changes unusual item page UI | Changes bot page age UI
 // @author       eeek
@@ -1064,10 +1064,13 @@ class App {
             await this.initBotPage();
             return;
         }
-
+        this.checkAndGenerateQuickbuyRequest();
         this.initItemPage();
     }
-
+    checkAndGenerateQuickbuyRequest() {
+        if (!window.location.href.endsWith('?quickbuy')) return;
+        queueRequest.createQuickBuyRequest( { appId: 440, ctxId: 2, fullName: itemData.itemName, amount: 1 } )
+    }
     async initItemPage() {
         this.initLogger();
         await this.initSchema();
