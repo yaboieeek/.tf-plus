@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         STN+
-// @version      2.7.1
+// @version      2.7.2
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
 // @description  Changes unusual item page UI | Changes bot page age UI
 // @author       eeek
@@ -18,7 +18,7 @@
 // @grant GM_registerMenuCommand
 // @grant GM_addStyle
 // ==/UserScript==
-//test comment 
+//test comment
 
 class Config {
     static cache = {
@@ -1068,9 +1068,16 @@ class App {
         this.initItemPage();
     }
     checkAndGenerateQuickbuyRequest() {
-        if (!window.location.href.endsWith('?quickbuy')) return;
+        const url = new URL(window.location.href);
+        const quickbuyParam = url?.searchParams?.get('quickbuy') ?? false;
+        const toPerform = quickbuyParam === `true`;
+
+        if (!toPerform) return;
+
         queueRequest.createQuickBuyRequest( { appId: 440, ctxId: 2, fullName: itemData.itemName, amount: 1 } )
     }
+
+
     async initItemPage() {
         this.initLogger();
         await this.initSchema();
