@@ -1,3 +1,4 @@
+
 name: Discord Notifications
 
 on:
@@ -7,126 +8,104 @@ on:
 jobs:
   notify-discord:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v41
         with:
           since_last_remote_commit: true
-      
+
       - name: Send Discord notifications
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          # Функция для корректного экранирования JSONs
-          
-          json_escape() {
-            echo -n "$1" | \
-              sed -e 's/\\/\\\\/g' \
-                  -e 's/"/\\"/g' \
-                  -e 's/\//\\\//g' \
-                  -e 's/\r/\\r/g' \
-                  -e 's/\t/\\t/g' \
-                  -e ':a;N;$!ba;s/\n/\\n/g'
-          }
-          
+
           FILES_LIST="${{ steps.changed-files.outputs.all_changed_files }}"
-          
           IFS=' ' read -ra FILES_ARRAY <<< "$FILES_LIST"
-          
-          REPO_NAME=$(json_escape "${{ github.repository }}")
-          BRANCH_NAME=$(json_escape "${{ github.ref_name }}")
-          AUTHOR_NAME=$(json_escape "${{ github.actor }}")
-          
+
+          REPO_NAME="${{ github.repository }}"
+          BRANCH_NAME="${{ github.ref_name }}"
+          AUTHOR_NAME="${{ github.actor }}"
+
           for file_path in "${FILES_ARRAY[@]}"; do
+
             if [[ -n "$file_path" ]]; then
-              FILENAME=$(json_escape "$(basename "$file_path")")
-              FILEPATH_ESCAPED=$(json_escape "$file_path")
-              
+
+              FILENAME=$(basename "$file_path")
+
               REPO_URL="https://github.com/${{ github.repository }}"
               FILE_URL="$REPO_URL/blob/${{ github.ref_name }}/$file_path"
-              
+
               TITLE="$FILENAME"
-              
+
               DESCRIPTION=""
               TIMESTAMP=""
-              
+
               if [[ "${{ github.event_name }}" == "push" ]]; then
-                # Получаем сообщение коммита с правильным экранированием
+
                 COMMIT_MESSAGE_RAW="${{ github.event.head_commit.message }}"
-                # Экранируем для JSON
-                COMMIT_MESSAGE_ESCAPED=$(json_escape "$COMMIT_MESSAGE_RAW")
-                
-                # Разделяем заголовок и описание
+
                 FIRST_LINE=$(echo "$COMMIT_MESSAGE_RAW" | head -n1)
                 REST=$(echo "$COMMIT_MESSAGE_RAW" | tail -n+2)
-                
+
+                DESCRIPTION="**$FIRST_LINE**"
+
                 if [[ -n "$REST" ]]; then
-                  DESCRIPTION=$(json_escape "**$FIRST_LINE**\n\n$REST")
-                else
-                  DESCRIPTION=$(json_escape "**$FIRST_LINE**")
+                  DESCRIPTION+=$'\n\n'"$REST"
                 fi
-                
+
                 TIMESTAMP="${{ github.event.head_commit.timestamp }}"
               fi
-              
+
               if [[ -z "$TIMESTAMP" ]]; then
                 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
               fi
-              
-              # Создаем JSON с помощью jq (лучший способ)
-              if command -v jq &> /dev/null; then
-                JSON_PAYLOAD=$(jq -n \
-                  --arg content "🗣 Update in $REPO_NAME!" \
-                  --arg title "$TITLE" \
-                  --arg url "$FILE_URL" \
-                  --arg description "$DESCRIPTION" \
-                  --arg branch "$BRANCH_NAME" \
-                  --arg author "$AUTHOR_NAME" \
-                  --arg timestamp "$TIMESTAMP" \
-                  '{
-                    content: $content,
-                    embeds: [{
-                      title: $title,
-                      url: $url,
-                      description: $description,
-                      color: 10181046,
-                      fields: [
-                        {name: "Branch", value: $branch, inline: true},
-                        {name: "Author", value: $author, inline: true}
-                      ],
-                      timestamp: $timestamp
-                    }]
-                  }')
-                
-                echo "$JSON_PAYLOAD" | curl -H "Content-Type: application/json" \
-                  -X POST \
-                  -d @- \
-                  $DISCORD_WEBHOOK_URL || echo "Failed to send notification for $file_path"
-              else
-                # Fallback без jq (менее надежно)
-                curl -H "Content-Type: application/json" \
-                  -X POST \
-                  -d "{
-                    \"content\": \"🗣 Update in $REPO_NAME!\",
-                    \"embeds\": [{
-                      \"title\": \"$TITLE\",
-                      \"url\": \"$FILE_URL\",
-                      \"description\": \"$DESCRIPTION\",
-                      \"color\": 10181046,
-                      \"fields\": [
-                        {\"name\": \"Branch\", \"value\": \"$BRANCH_NAME\", \"inline\": true},
-                        {\"name\": \"Author\", \"value\": \"$AUTHOR_NAME\", \"inline\": true}
-                      ],
-                      \"timestamp\": \"$TIMESTAMP\"
-                    }]
-                  }" \
-                  $DISCORD_WEBHOOK_URL || echo "Failed to send notification for $file_path"
-              fi
+
+              JSON_PAYLOAD=$(jq -n \
+                --arg content "🗣 Update in $REPO_NAME!" \
+                --arg title "$TITLE" \
+                --arg url "$FILE_URL" \
+                --arg description "$DESCRIPTION" \
+                --arg branch "$BRANCH_NAME" \
+                --arg author "$AUTHOR_NAME" \
+                --arg timestamp "$TIMESTAMP" \
+                '{
+                  content: $content,
+                  embeds: [{
+                    title: $title,
+                    url: $url,
+                    description: $description,
+                    color: 10181046,
+                    fields: [
+                      {
+                        name: "Branch",
+                        value: $branch,
+                        inline: true
+                      },
+                      {
+                        name: "Author",
+                        value: $author,
+                        inline: true
+                      }
+                    ],
+                    timestamp: $timestamp
+                  }]
+                }')
+
+              echo "$JSON_PAYLOAD"
+
+              curl -H "Content-Type: application/json" \
+                -X POST \
+                -d "$JSON_PAYLOAD" \
+                "$DISCORD_WEBHOOK_URL"
+
             fi
+
           done
+
