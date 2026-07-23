@@ -49,8 +49,6 @@ jobs:
 
               if [[ "${{ github.event_name }}" == "push" ]]; then
 
-                COMMIT_MESSAGE_RAW="${{ github.event.head_commit.message }}"
-
                 FIRST_LINE=$(echo "$COMMIT_MESSAGE_RAW" | head -n1)
                 REST=$(echo "$COMMIT_MESSAGE_RAW" | tail -n+2)
 
@@ -60,7 +58,7 @@ jobs:
                   DESCRIPTION+=$'\n\n'"$REST"
                 fi
 
-                TIMESTAMP="${{ github.event.head_commit.timestamp }}"
+                TIMESTAMP="$COMMIT_TIMESTAMP"
               fi
 
               if [[ -z "$TIMESTAMP" ]]; then
