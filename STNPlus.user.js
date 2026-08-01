@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         STN+
-// @version      2.7.2
+// @version      2.7.3
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
 // @description  Changes unusual item page UI | Changes bot page age UI
 // @author       eeek
@@ -243,22 +243,32 @@ class ListingManager {
 
     invalid = {invalid: false};
 
-    constructor(cache) {
-        ///we need these to use the price endpoint
-        this.cache = cache;
-        this.effect = document.querySelector('.card-text.m-0').innerText.match(/★ Unusual Effect: (.*)/)[1].trim(); // get the effect name from the effect name on the page
-        this.itemName = itemData.itemName.replace(`Unusual ${this.effect}`, '').trim(); // yuh it be like that
-        this.priceIndex = document.querySelectorAll('.col-sm-4 picture')[1].querySelector('img').getAttribute('src').match(/particles\/(.*)@4x\.png$/)[1];
-        this.stockButtons = [
-            ...document.querySelector('.col-lg-6.p-sm-0').querySelector('.px-3').children
-        ];
-        this.stnInventory = document.querySelector('.tfip-pg-bx-wrap')?.getAttribute('onclick')?? null;
+constructor(cache) {
+    ///we need these to use the price endpoint
+    this.cache = cache;
+    this.effect = document.querySelector('.card-text.m-0').innerText.match(/★ Unusual Effect: (.*)/)[1].trim(); // get the effect name from the effect name on the page
+    this.itemName = itemData.itemName.replace(`Unusual ${this.effect}`, '').trim(); // yuh it be like that
+    this.priceIndex = document.querySelectorAll('.col-sm-4 picture')[1].querySelector('img').getAttribute('src').match(/particles\/(.*)@4x\.png$/)[1];
+    this.stockButtons = [
+        ...document.querySelector('.col-lg-6.p-sm-0').querySelector('.px-3').children
+    ];
+    this.stnInventory = this._getInventoryAction();
 
-        this.getStnPrices();
-        this._cleanField();
-        this.createListingsField() ;/// clean the field for custom
-        this.renderBackpackListings();
-        this._createListing(this.pointers[0], this.stnPrices, true);
+    this.getStnPrices();
+    this._cleanField();
+    this.createListingsField() ;/// clean the field for custom
+    this.renderBackpackListings();
+    this._createListing(this.pointers[0], this.stnPrices, true);
+    }
+
+    _getInventoryAction() {
+        const dataset = document.querySelector('.tfip-pg-bx-wrap')?.dataset ?? null;
+        if (!dataset) {
+            console.log('Bot link is unavailable right now.');
+            return null;
+        };
+
+        return `buyFromBot('${dataset.botId}', '${defCat}')`;
     }
 
     createListingsField() {
