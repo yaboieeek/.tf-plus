@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ScrapAuctions+
 // @namespace    https://discord.gg/jygnfCRjna <<< for more of my scripts/announcements/suggestions
-// @version      2.4.1
+// @version      2.4.2
 // @description  it adds cool buttons
 // @author       eeek
 // @match        https://scrap.tf/auctions*
@@ -63,27 +63,13 @@ const SCRAP_LINK = {
 }
 
 
-const AVAILABLE_LINKS = GM_getValue('AVAILABLE_LINKS') || [
-    {
-        name: 'marketplace',
-        status: true
-    },
-    {
-        name: 'backpack stats',
-        status: true
-    },
-    {
-        name: 'mannco',
-        status: true
-    },
-    {
-        name: 'history',
-        status: true
-    },
-    {
-        name: 'steamcommunity',
-        status: true
-    },
+const DEFAULT_AVAILABLE_LINKS = [
+    { name: 'marketplace', status: true },
+    { name: 'backpack stats', status: true },
+    { name: 'mannco', status: true },
+    { name: 'history', status: true },
+    { name: 'steamcommunity', status: true },
+    { name: 'STN', status: true },
 ];
 
 const EXTERNAL_LINKS = {
@@ -91,8 +77,28 @@ const EXTERNAL_LINKS = {
     bp: 'backpack stats',
     history: 'history',
     mannco: 'mannco',
-    scm: 'steamcommunity'
-}
+    scm: 'steamcommunity',
+    stn: 'STN'
+};
+
+const verifyAndUpdateLinks = () => {
+    const currentLinks = GM_getValue('AVAILABLE_LINKS') || [];
+
+    const existingNames = new Set(currentLinks.map(link => link.name));
+
+    const missingLinks = DEFAULT_AVAILABLE_LINKS.filter(link => !existingNames.has(link.name));
+
+    if (missingLinks.length > 0) {
+        const updatedLinks = [...currentLinks, ...missingLinks];
+        GM_setValue('AVAILABLE_LINKS', updatedLinks);
+        return updatedLinks;
+    }
+
+    return currentLinks;
+};
+
+const AVAILABLE_LINKS = verifyAndUpdateLinks();
+
 
 const defStyle = document.querySelector('.form-control').style.border;
 
@@ -265,14 +271,13 @@ class Item extends FromElement {
     };
 
     fromElement() {
-        const {name, quality} = this.getNameAndQuality();
-        this.name = name;
-        this.quality = quality;
+       ({ name: this.name, quality: this.quality, defindex: this.isRenamed } = this.getNameAndQuality());
         this.defindex = this.element.dataset.defindex;
         this.id = this.element.dataset.id;
         this.craftable = ![...this.element.classList].some(c => c.startsWith('uncraft'));
 
         this.clearNameFromQuality();
+        this.checkForElevated();
 
         if (this.quality === 5){
             const match = this.element.dataset.content.match(/Effect: ([^<]+)/);
@@ -286,6 +291,10 @@ class Item extends FromElement {
 
         this.killstreakTier = [...this.element.classList].find(c => c.startsWith('killstreak')).replace('killstreak', '');
 
+    }
+
+    checkForElevated() {
+        this.isStrange = !!this.element.querySelector('.statclock2');
     }
 
     getSkinData() {
@@ -304,11 +313,22 @@ class Item extends FromElement {
 
         const regex = /<span class='quality(\d+)'>([^<]+)<\/span>/;
         const match = this.element.dataset.title.match(regex);
+
         if (!match) {
             return {
                 name: null,
+                defindex: this.element.dataset.defindex,
                 quality: Number([...this.element.classList].find(c => c.startsWith('quality')).replace('quality', '')),
             }
+        }
+
+        if (match[2].includes('"')) {
+            return {
+                name: match[2],
+                defindex: this.element.dataset.defindex,
+                quality: Number(match[1])
+            }
+
         }
         return {
             name: match[2],
@@ -828,25 +848,32 @@ class ItemUI {
 
     ////////MAAAAYBE this looks like a complete assssssss but still does the job
     createLink(mode) {
+        const properNameForBp = this.item.isRenamed ? this.item.defindex : encodeURIComponent(((KILLSTREAKS[this.item.killstreakTier])|| '') + this.item.name);
+
         switch (mode) {
             case EXTERNAL_LINKS.mp: {
                 if (this.item.name === 'Unusualifier' || this.item.name.includes('Kit')) return null;
                 return `https://marketplace.tf/items/tf2/${Utils.makeSKU(this.item)}`
             }
+            case EXTERNAL_LINKS.stn: {
+                if (this.item.name === 'Unusualifier' || this.item.name.includes('Kit') || this.item.isRenamed || this.item.wear || !this.item.effectName) return null;
+                return `https://stntrading.eu/item/tf2/Unusual+${this.item.effectName.split(' ').join('+') + '+' + this.item.name.split(' ').join('+')}`
+            }
             case EXTERNAL_LINKS.bp: 
                 if (this.item.name === 'Unusualifier' || this.item.name.includes('Kit')) return null;
                 if (this.item.wear) return null // CBA it RAHHHHHHHHHH just use my or not my button on mp
-                return `https://backpack.tf/stats/${encodeURIComponent(QUALITIES[this.item.quality])}/${encodeURIComponent(((KILLSTREAKS[this.item.killstreakTier])|| '') + this.item.name)}/Tradable/${encodeURIComponent(this.item.craftable ? 'Craftable' : 'Non-Craftable')}/${encodeURIComponent(this.item?.priceIndex ?? '')}`
+                return `https://backpack.tf/stats/${encodeURIComponent(QUALITIES[this.item.quality])}/${properNameForBp}/Tradable/${encodeURIComponent(this.item.craftable ? 'Craftable' : 'Non-Craftable')}/${encodeURIComponent(this.item?.priceIndex ?? '')}`
                 case EXTERNAL_LINKS.history:
                 return `https://backpack.tf/item/${this.item.id}`;
             case EXTERNAL_LINKS.mannco:
-                if (this.item.quality !== 5 || this.item.name === 'Unusualifier') return null;
+                if (this.item.quality !== 5 || this.item.name === 'Unusualifier' || this.item.isRenamed) return null;
                 return `https://mannco.store/item/440-` +
                     this.formatForUrl(this.item.effectName) +
                     '-unusual-' +
                     this.formatForUrl(this.item.name);
 
             case EXTERNAL_LINKS.scm: {
+                if (this.item.isRenamed) return null;
                 let before = '', after = '';
                 let wrap = (before, current, after) => before + encodeURIComponent(current) + after;
 
@@ -1364,14 +1391,16 @@ class Utils {
         const skinTemplate = ({defindex, quality, wear, paintKit}) =>
         `${defindex};${quality};w${wear};pk${paintKit}`;
 
-        const unuSkinTemplate = ({defindex, quality, priceIndex, wear, paintKit}) =>
-        `${defindex};15;u${priceIndex};w${wear};pk${paintKit}`;
+        const unuSkinTemplate = ({defindex, quality, priceIndex, wear, paintKit, isStrange}) =>
+        `${defindex};15;u${priceIndex};w${wear};pk${paintKit}${isStrange ? ';strange' : ''}`;
 
         const unusualTemplate = ({defindex, quality, priceIndex}) =>
         `${defindex};${quality};u${priceIndex}`;
 
         const hasKillstreak = item.killstreakTier !== undefined;
         const killstreakSuffix = hasKillstreak ? `;kt-${item.killstreakTier}` : '';
+
+
 
         if (item.wear !== undefined && item.paintKit !== undefined) {
             let sku = item.priceIndex !== undefined ? unuSkinTemplate(item) : skinTemplate(item);
