@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ScrapAuctions+
 // @namespace    https://discord.gg/jygnfCRjna <<< for more of my scripts/announcements/suggestions
-// @version      2.4.2
+// @version      2.4.3
 // @description  it adds cool buttons
 // @author       eeek
 // @match        https://scrap.tf/auctions*
@@ -39,7 +39,8 @@ const QUALITIES = {
     '6':'Unique',
     '9':'Self-Made',
     '11':'Strange',
-    '13': 'Collector\'s',
+    '13': 'Haunted',
+    '14': 'Collector\'s',
     '15': 'Decorated Weapon'
 }
 
