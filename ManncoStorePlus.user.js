@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ManncoStore+
 // @namespace    https://steamcommunity.com/profiles/76561198967088046
-// @version      2.1.0
-// @description  Adds backpack.tf stat page button for unusuals | Replaces sc links with bptf history
+// @version      2.1.2
+// @description  Adds backpack.tf stat page button for unusuals 
 // @author       eeek
 // @match       https://mannco.store/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=mannco.store
@@ -20,9 +20,12 @@ const SELECTORS = {
     LOAD_SPINNER: '#transacContent .spinner-border',
     ITEM_TABLE_ROW: '.itemListPagination',
     ITEM_INFO: {
-        SELF: '.item-details__title.card-title',
+        SELF: '.card__title.item-details__title.mb-0',
         EFFECT: '.item-details__title .item-details__title-effect',
         NAME: '.item-details__title-effect',
+    },
+    ITEM_BUTTONS: {
+        STEAM: '.item-listing__actions .btn.btn--secondary.btn--sm.item-listing__action'
     }
 }
 
@@ -34,7 +37,7 @@ const LINKS = {
 }
 
 const style = `
-.clickable-item-info {
+${SELECTORS.ITEM_INFO.SELF} {
     padding: 0.5rem 1rem;
     border-radius: 0.25rem;
     &:hover {
@@ -48,7 +51,6 @@ GM_addStyle(style)
 
 class AliasController {
     constructor() {
-        // FIX 1: Parse the retrieved entries properly, or default to an empty array
         const savedAliases = GM_getValue('aliases', []);
         this.aliases = new Map(savedAliases);
         this.itemManager = null;
@@ -106,6 +108,8 @@ class Item {
         return match[1]
     }
 }
+
+
 class SchemaManager {
     constructor(schemaUrl = schemaURL) {
         this.url = schemaUrl;
@@ -191,7 +195,7 @@ class ItemsController {
         const fullItem = document.querySelector(SELECTORS.ITEM_INFO.SELF).innerText.split('\n');
         const effectName = fullItem[0]?.replace('★ ', '')?? '';
         const rawName = fullItem[1]?.replace('Unusual ', '') ?? '';
-        const aliasValue = this.aliasController.aliases.get(rawName);
+        const aliasValue = this.aliasController?.aliases.get(rawName) ?? null;
 
         let name = rawName;
         aliasValue ? name = aliasValue : name;
@@ -232,22 +236,85 @@ class ItemsController {
 class PageUI {
     constructor(itemsController) {
         this.itemsController = itemsController;
+        this._isProcessing = false;
     }
 
     create() {
-        if (this.itemsController?.itemsInfo ?? false ) return;
-        this.makeItemInfoClickable()
+        if (this._isProcessing) return;
+        if (!this.itemsController?.itemInfo) return;
+
+
+        const $itemInfo = document.querySelector(SELECTORS.ITEM_INFO.SELF);
+        if (!$itemInfo) return;
+        if ($itemInfo.tagName === 'A' && $itemInfo.dataset.tfPlusClickable === '1') {
+            return;
+        }
+
+        this._isProcessing = true;
+        try {
+            this.makeItemInfoClickable();
+            this.addHistoryButtonsForIndividualItems();
+        } finally {
+            this._isProcessing = false;
+        }
     }
 
     makeItemInfoClickable() {
-
-        const $itemInfo = document.querySelector(SELECTORS.ITEM_INFO.SELF);
-        $itemInfo.classList.add('clickable-item-info');
+        let $itemInfo = document.querySelector(SELECTORS.ITEM_INFO.SELF);
+        if (!$itemInfo) return;
 
         const bplink = LINKS.BP(this.itemsController.itemInfo);
-        console.log(bplink);
-        $itemInfo.addEventListener('click', () => window.open(bplink, '_blank'))
+        console.log("BP link:", bplink);
 
+        if ($itemInfo.dataset.tfPlusClickable === "1" && $itemInfo.tagName === 'A') {
+            $itemInfo.href = bplink;
+            $itemInfo.target = "_blank";
+            return;
+        }
+
+
+        $itemInfo = changeTag($itemInfo, 'a');
+        $itemInfo.dataset.tfPlusClickable = "1";
+        $itemInfo.style.cursor = "pointer";
+        $itemInfo.style.textDecoration = "none";
+        $itemInfo.href = bplink;
+        $itemInfo.target = "_blank";
+    }
+
+    addHistoryButtonsForIndividualItems() {
+        const $steamButtons = [
+            ...document.querySelectorAll(SELECTORS.ITEM_BUTTONS.STEAM),
+        ].filter(($e) => $e.innerText.includes("View on Steam"));
+
+        const ids = $steamButtons.map(($e) => $e.href.split("_").at(-1));
+        console.log("Steam IDs:", ids);
+
+        $steamButtons.forEach(($e, i) => {
+            const nextEl = $e.nextElementSibling;
+
+            if (nextEl && nextEl.classList.contains("eeekwashere")) {
+                return;
+            }
+
+            const $b = document.createElement("a");
+            $b.className =
+                "btn btn--secondary btn--sm item-listing__action eeekwashere";
+            $b.href = `https://backpack.tf/item/${ids[i]}`;
+            $b.target = `_blank`;
+
+            const calendar = `<?xml version="1.0" encoding="utf-8"?>
+                <svg viewBox="0 0 24 24" fill="transparent" xmlns="http://www.w3.org/2000/svg" width="16px">
+                <path d="M3 9H21M7 3V5M17 3V5M6 12H8M11 12H13M16 12H18M6 15H8M11 15H13M16 15H18M6 18H8M11 18H13M16 18H18M6.2 21H17.8C18.9201 21 19.4802 21 19.908 20.782C20.2843 20.5903 20.5903 20.2843 20.782 19.908C21 19.4802 21 18.9201 21 17.8V8.2C21 7.07989 21 6.51984 20.782 6.09202C20.5903 5.71569 20.2843 5.40973 19.908 5.21799C19.4802 5 18.9201 5 17.8 5H6.2C5.0799 5 4.51984 5 4.09202 5.21799C3.71569 5.40973 3.40973 5.71569 3.21799 6.09202C3 6.51984 3 7.07989 3 8.2V17.8C3 18.9201 3 19.4802 3.21799 19.908C3.40973 20.2843 3.71569 20.5903 4.09202 20.782C4.51984 21 5.07989 21 6.2 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>`;
+
+            $b.innerHTML = calendar;
+
+            const $span = document.createElement("span");
+            $span.innerText = "View item history";
+            $b.append($span);
+
+            $e.after($b);
+        });
     }
 }
 
@@ -255,38 +322,96 @@ let lastPath = "";
 
 function initItemPage(schemaManager, aliasController) {
     const itemInfo = document.querySelector(SELECTORS.ITEM_INFO.SELF);
-
     if (!itemInfo) return;
-
-    if (lastPath === location.pathname) return;
-
-    lastPath = location.pathname;
-
-    if (itemInfo.dataset.tfPlusInitialized) return;
-
-    itemInfo.dataset.tfPlusInitialized = "1";
-
-
     const controller = new ItemsController(schemaManager, aliasController);
-    aliasController.setItemManager(controller)
-    new PageUI(controller).create();
+    // aliasController.setItemManager(controller);
+
+    const pageUI = new PageUI(controller);
+
+    pageUI.create();
+
+    if (!document.querySelector(".eeekwashere")) {
+        console.log("[PageUI] Buttons missing, re-adding...");
+        pageUI.addHistoryButtonsForIndividualItems();
+    }
 }
 
-function setupPageObserver(schemaManager, aliasController) {
-    const observer = new MutationObserver(() => {
-        initItemPage(schemaManager, aliasController);
+function setupPageObserver(schemaManager, aliasController = null) {
+    let scheduled = false;
+    let isInternalChange = false;
+    const observer = new MutationObserver((mutations) => {
+
+        if (isInternalChange) return;
+
+        if (scheduled) return;
+        scheduled = true;
+
+        requestAnimationFrame(() => {
+            scheduled = false;
+
+            if (lastPath !== location.pathname) {
+                lastPath = location.pathname;
+                console.log("[PageUI] Path changed:", lastPath);
+                isInternalChange = true;
+                initItemPage(schemaManager, aliasController);
+                isInternalChange = false;
+                return;
+            }
+
+            const itemInfo = document.querySelector(SELECTORS.ITEM_INFO.SELF);
+            const hasButtons = document.querySelector(".eeekwashere");
+
+            const needsInit =
+                (itemInfo && !hasButtons) ||
+                (itemInfo && !itemInfo.dataset.tfPlusClickable);
+
+            if (needsInit) {
+                console.log("[PageUI] Re-initializing...");
+                isInternalChange = true;
+                initItemPage(schemaManager, aliasController);
+                isInternalChange = false;
+            }
+        });
     });
 
     observer.observe(document.body, {
         subtree: true,
-        childList: true
+        childList: true,
+        attributes: false,  // ← НЕ следим за атрибутами
     });
 
+    isInternalChange = true;
     initItemPage(schemaManager, aliasController);
+    isInternalChange = false;
 }
 
 const schemaManager = new SchemaManager();
 await schemaManager.init();
-const aliasController = new AliasController();
-console.log(aliasController);
-setupPageObserver(schemaManager, aliasController);
+
+
+
+// const aliasController = new AliasController();
+// console.log(aliasController);
+
+setupPageObserver(schemaManager, null);
+
+
+// Source - https://stackoverflow.com/a/65090521
+// Posted by dreamLo, modified by community. See post 'Timeline' for change history
+// Retrieved 2026-10-20, License - CC BY-SA 4.0
+
+function changeTag(node, tag) {
+    if (node.tagName.toLowerCase() === tag.toLowerCase()) {
+        return node;
+    }
+
+    const clone = document.createElement(tag);
+    for (const attr of node.attributes) {
+        clone.setAttributeNS(null, attr.name, attr.value);
+    }
+    while (node.firstChild) {
+        clone.appendChild(node.firstChild);
+    }
+    node.replaceWith(clone);
+    return clone;
+}
